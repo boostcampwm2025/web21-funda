@@ -30,6 +30,19 @@
 <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
 <img src="https://img.shields.io/badge/nestjs-E0234E?style=for-the-badge&logo=nestjs&logoColor=white">
 
+### 백엔드 실행 방법
+
+```bash
+# 의존성 설치
+pnpm install
+
+# 개발
+pnpm --filter backend start:dev
+
+# 빌드
+pnpm --filter backend build
+```
+
 ### 디자인
 
 <img src="https://img.shields.io/badge/Figma-F24E1E?style=for-the-badge&logo=Figma&logoColor=white">
