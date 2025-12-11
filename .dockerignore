@@ -1,0 +1,11 @@
+node_modules
+.pnpm-store
+.git
+.env.local
+dist
+build
+.vscode
+.idea
+.DS_Store
+.turbo
+coverage
