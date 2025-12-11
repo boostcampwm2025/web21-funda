@@ -1,14 +1,14 @@
 {
-    "compilerOptions": {
-        "jsx": "react-jsx",
-        "jsxImportSource": "@emotion/react",
-        // IDE에서 자동완성을 위해 추가
-        "baseUrl": ".",
-        "paths": {
-            "@/*": ["src/*"],
-            "@comp/*": ["src/components/*"]
-        }
-    },
-    "files": [],
-    "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "@emotion/react",
+    // IDE에서 자동완성을 위해 추가
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@comp/*": ["src/components/*"]
+    }
+  },
+  "files": [],
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
 }

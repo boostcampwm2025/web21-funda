@@ -1,0 +1,13 @@
+#!/bin/sh
+
+echo "🔍 Running pnpm run lint..."
+pnpm run lint
+RESULT=$?
+
+if [ $RESULT -ne 0 ]; then
+  echo "❌ Lint failed. Push aborted."
+  exit 1
+fi
+
+echo "✅ Lint passed. Push allowed."
+exit 0

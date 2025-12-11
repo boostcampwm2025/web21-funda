@@ -1,0 +1,9 @@
+{
+  "extends": "@repo/typescript-config/frontend.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.storybook.tsbuildinfo",
+    "composite": true,
+    "incremental": true
+  },
+  "include": [".storybook/**/*"]
+}

@@ -1,0 +1,20 @@
+# 커밋 메시지 유형 검증
+commit_msg=$(cat "$1")
+allowed_types="feat: fix: refactor: style: docs: chore: rename: remove: test: ci: lint:"
+
+# 커밋 메시지가 허용된 유형으로 시작하는지 확인
+is_valid=false
+for type in $allowed_types; do
+  if echo "$commit_msg" | grep -q "^$type"; then
+    is_valid=true
+    break
+  fi
+done
+
+if [ "$is_valid" = false ]; then
+  echo "❌ 커밋 메시지가 허용된 유형으로 시작하지 않습니다."
+  echo "허용된 유형: $allowed_types"
+  echo "예시: feat: 로그인 완성"
+  exit 1
+fi
+
