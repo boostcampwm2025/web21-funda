@@ -1,7 +1,7 @@
 # .github/ISSUE_TEMPLATE/feature_request.yml
 name: "✨ 작업 요청"
 description: "이슈를 추가할 때 템플릿을 사용하여 작성해주세요"
-title: ""
+title: "Feature Request"
 labels: []
 
 body:
