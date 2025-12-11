@@ -13,6 +13,20 @@ const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(file
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
     plugins: [react(), svgr({ include: '**/*.svg?react' })],
+    resolve: {
+        alias: {
+            '@': path.resolve(dirname, './src'),
+            '@comp': path.resolve(dirname, './src/components'),
+        },
+    },
+    server: {
+        proxy: {
+            '/api': {
+                target: 'http://localhost:3000',
+                changeOrigin: true,
+            },
+        },
+    },
     test: {
         projects: [
             {
