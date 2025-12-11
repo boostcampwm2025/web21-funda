@@ -5,5 +5,5 @@
     "composite": true,
     "incremental": true
   },
-  "include": [".storybook/**/*"]
+  "include": [".storybook/**/*", "src/**/*.stories.tsx"]
 }
