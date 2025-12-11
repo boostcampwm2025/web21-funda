@@ -20,7 +20,10 @@
     "*.{ts,tsx,js,jsx,json,md}": [
       "prettier --write"
     ],
-    "*.{ts,tsx,js,jsx}": [
+    "apps/**/*.{ts,tsx,js,jsx}": [
+      "eslint --fix"
+    ],
+    "packages/**/*.{ts,tsx,js,jsx}": [
       "eslint --fix"
     ]
   },
