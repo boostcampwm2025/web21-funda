@@ -1,10 +1,9 @@
 import { useState } from 'react';
-
 import reactLogo from './assets/react.svg';
-
-import './App.css';
-
 import viteLogo from '/vite.svg';
+import './App.css';
+import { css } from '@emotion/react';
+import { typography } from './styles/typography';
 
 function App() {
   const [count, setCount] = useState(0);
@@ -19,7 +18,7 @@ function App() {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>
-      <h1>Vite + React</h1>
+      <h1 css={H1}>Vite + React</h1>
       <div className="card">
         <button onClick={() => setCount(count => count + 1)}>count is {count}</button>
         <p>
@@ -31,4 +30,10 @@ function App() {
   );
 }
 
+const H1 = css`
+  font-size: ${typography['36ExtraBold'].fontSize};
+  line-height: ${typography['36ExtraBold'].lineHeight};
+  font-weight: ${typography['36ExtraBold'].fontWeight};
+  color: #4e4866;
+`;
 export default App;
