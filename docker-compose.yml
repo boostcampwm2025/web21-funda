@@ -1,0 +1,33 @@
+services:
+  frontend:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    ports:
+      - '5173:5173'
+    volumes:
+      - ./apps/frontend:/app/apps/frontend # 로컬 파일 변경 시 컨테이너에 실시간 반영
+      - /app/node_modules # <--- 익명 볼륨: 컨테이너 내부 node_modules 보존
+      - /app/.pnpm-store
+    environment:
+      - VITE_API_URL=http://backend:3000 # 환경 변수 (백엔드 API 주소)
+    depends_on:
+      backend:
+        condition: service_started
+
+  backend:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    ports:
+      - '3000:3000'
+
+    volumes:
+      - ./apps/backend:/app/apps/backend
+      - /app/node_modules # <--- 익명 볼륨: 컨테이너 내부 node_modules 보존
+      - /app/.pnpm-store
+
+    environment:
+      - PORT=3000
