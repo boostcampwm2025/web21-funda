@@ -31,9 +31,6 @@ export default [
       ecmaVersion: 'latest',
       sourceType: 'module',
       parser: tseslint.parser,
-      parserOptions: {
-        projectService: true,
-      },
     },
     rules: {
       // Prettier 통합
