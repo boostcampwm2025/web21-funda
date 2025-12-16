@@ -1,0 +1,56 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: funda-mysql
+    environment:
+      MYSQL_DATABASE: funda
+      MYSQL_USER: funda_prod
+      MYSQL_PASSWORD: funda_prod_pw
+      MYSQL_ROOT_PASSWORD: root_pw
+      TZ: Asia/Seoul
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${MYSQL_ROOT_PASSWORD}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: funda-backend
+    env_file:
+      - ./apps/backend/.env.production # create with DB URL, secrets, CLIENT_ORIGIN, etc.
+    environment:
+      NODE_ENV: production
+      CLIENT_ORIGIN: http://localhost
+    ports:
+      - '3000:3000'
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_BASE_URL: http://localhost/api
+    container_name: funda-frontend
+    ports:
+      - '80:80'
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
