@@ -37,7 +37,7 @@ const baseStyle = (theme: Theme, fullWidth: boolean) => css`
   align-items: center;
   justify-content: center;
   width: ${fullWidth ? '100%' : 'auto'};
-  padding: 8px 12px;
+  padding: 12px;
   border: 0;
   border-radius: ${theme.borderRadius.medium};
   cursor: pointer;
@@ -57,7 +57,7 @@ const baseStyle = (theme: Theme, fullWidth: boolean) => css`
 
 const primaryStyle = (theme: Theme) => css`
   background: ${theme.colors.primary.main};
-  color: ${theme.colors.text.light};
+  color: ${theme.colors.surface.strong};
   box-shadow: 0 10px 0 ${theme.colors.primary.dark};
 
   &:hover {
@@ -74,7 +74,7 @@ const primaryStyle = (theme: Theme) => css`
 
 const secondaryStyle = (theme: Theme) => css`
   background: ${theme.colors.surface.strong};
-  color: ${theme.colors.text.default};
+  color: ${theme.colors.text.light};
   border: 2px solid ${theme.colors.primary.surface};
   box-shadow: 0 10px 0 ${theme.colors.primary.surface};
 
