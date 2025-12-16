@@ -1,9 +1,9 @@
+import { Button } from '@comp/Button';
 import { css, useTheme } from '@emotion/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import type { Theme } from '../../styles/theme';
-import { Button } from '../Button';
+import type { Theme } from '@/styles/theme';
 
 interface QuizHeaderProps {
   currentStep: number;
