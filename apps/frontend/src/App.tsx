@@ -2,17 +2,18 @@ import { css, Global, ThemeProvider } from '@emotion/react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import { AuthCheck } from './pages/AuthCheck';
+import { Error } from './pages/Error';
 import { Fields } from './pages/Fields';
 import { Landing } from './pages/Landing';
-import { Leaderboard } from './pages/Leaderboard';
+// import { Leaderboard } from './pages/Leaderboard';
 import { Learn } from './pages/Learn';
 import { Login } from './pages/Login';
 import { Overview } from './pages/Overview';
-import { Profile } from './pages/Profile';
+// import { Profile } from './pages/Profile';
 import { Quiz } from './pages/Quiz';
 import { QuizResult } from './pages/QuizResult';
 import { ServicePreparation } from './pages/ServicePreparation';
-import { Setting } from './pages/Setting';
+// import { Setting } from './pages/Setting';
 import { Streak } from './pages/Streak';
 import { darkTheme, lightTheme } from './styles/theme';
 
@@ -55,19 +56,22 @@ const router = createBrowserRouter([
   },
   {
     path: '/leaderboard/:groupId',
-    element: <Leaderboard />,
+    // element: <Leaderboard />,
+    element: <ServicePreparation />,
   },
   {
     path: '/setting',
-    element: <Setting />,
+    // element: <Setting />,
+    element: <ServicePreparation />,
   },
   {
     path: '/profile/:userId',
-    element: <Profile />,
+    //element: <Profile />,
+    element: <ServicePreparation />,
   },
   {
     path: '*',
-    element: <ServicePreparation />,
+    element: <Error />,
   },
 ]);
 
