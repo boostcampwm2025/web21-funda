@@ -21,7 +21,7 @@ export const Button = ({
   return (
     <button
       css={[
-        baseStyle(fullWidth),
+        baseStyle(theme, fullWidth),
         variant === 'primary' ? primaryStyle(theme) : secondaryStyle(theme),
         props.disabled && disabledStyle(theme),
       ]}
@@ -32,14 +32,14 @@ export const Button = ({
   );
 };
 
-const baseStyle = (fullWidth: boolean) => css`
+const baseStyle = (theme: Theme, fullWidth: boolean) => css`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: ${fullWidth ? '100%' : 'auto'};
   padding: 8px 12px;
   border: 0;
-  border-radius: 16px;
+  border-radius: ${theme.borderRadius.medium};
   cursor: pointer;
   transition:
     transform 150ms ease,
@@ -47,7 +47,6 @@ const baseStyle = (fullWidth: boolean) => css`
     filter 150ms ease;
   font-family:
     'SUIT',
-    'D2Coding',
     'Inter',
     -apple-system,
     BlinkMacSystemFont,
