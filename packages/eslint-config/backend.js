@@ -16,6 +16,8 @@ export default [
       '@typescript-eslint/interface-name-prefix': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
+      // Nest 의존성 주입 메타데이터를 위해 클래스 import를 값으로 유지할 수 있도록 허용
+      '@typescript-eslint/consistent-type-imports': 'off',
       // Node.js 환경에서는 console 허용
       'no-console': 'off',
     },

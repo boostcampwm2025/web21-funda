@@ -1,0 +1,78 @@
+version: '3.9'
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: funda-mysql
+    environment:
+      MYSQL_DATABASE: funda
+      MYSQL_USER: funda_dev
+      MYSQL_PASSWORD: funda_dev_pw
+      MYSQL_ROOT_PASSWORD: root_pw
+      TZ: Asia/Seoul
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${MYSQL_ROOT_PASSWORD}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    container_name: funda-backend
+    working_dir: /workspace
+    env_file:
+      - ./apps/backend/.env.local
+    command: >
+      sh -c "pnpm install
+      && pnpm --filter backend start:dev"
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/workspace
+      - root_node_modules:/workspace/node_modules
+      - backend_node_modules:/workspace/apps/backend/node_modules
+      - pnpm_store:/root/.local/share/pnpm/store
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    container_name: funda-frontend
+    working_dir: /workspace
+    env_file:
+      - ./apps/frontend/.env.local
+    command: >
+      sh -c "pnpm install
+      && pnpm --filter frontend dev"
+    environment:
+      NODE_ENV: development
+      VITE_API_BASE_URL: http://localhost:3000/api
+    ports:
+      - '5173:5173'
+    volumes:
+      - .:/workspace
+      - root_node_modules:/workspace/node_modules
+      - frontend_node_modules:/workspace/apps/frontend/node_modules
+      - pnpm_store:/root/.local/share/pnpm/store
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  root_node_modules:
+  backend_node_modules:
+  frontend_node_modules:
+  pnpm_store:
