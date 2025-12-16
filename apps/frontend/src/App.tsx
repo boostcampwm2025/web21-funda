@@ -1,11 +1,14 @@
 import { css, Global, ThemeProvider } from '@emotion/react';
 
 import { Button } from './components/Button';
-import { lightTheme } from './styles/theme';
+import { CodeBlock } from './components/CodeBlock';
+import { darkTheme, lightTheme } from './styles/theme';
 
 export default function App() {
+  const isDarkMode = false;
+
   return (
-    <ThemeProvider theme={lightTheme}>
+    <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
       <Global styles={globalStyle} />
       <main css={pageStyle}>
         <section css={stackStyle}>
@@ -15,6 +18,12 @@ export default function App() {
           <Button variant="secondary" fullWidth>
             전 이미 계정이 있어요
           </Button>
+          <CodeBlock>
+            {`const example = () => {
+    console.log('Hello, World!');
+    return true;
+  };`}
+          </CodeBlock>
         </section>
       </main>
     </ThemeProvider>
@@ -31,7 +40,6 @@ const globalStyle = css`
     background: linear-gradient(180deg, #f7f7fc 0%, #eef1ff 100%);
     font-family:
       'SUIT',
-      'D2Coding',
       'Inter',
       -apple-system,
       BlinkMacSystemFont,
