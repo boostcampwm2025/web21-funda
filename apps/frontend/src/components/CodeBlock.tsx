@@ -1,25 +1,37 @@
 import { css, useTheme } from '@emotion/react';
 import type { HTMLAttributes } from 'react';
 
-import type { Theme } from '../styles/theme';
+import type { Theme } from '@/styles/theme';
 
 export interface CodeBlockProps extends HTMLAttributes<HTMLPreElement> {
   children: React.ReactNode;
-  language?: string; // 우측 상단 라벨을 위한 props 추가
+  language?: string;
 }
 
 export const CodeBlock = ({ children, language = 'JavaScript' }: CodeBlockProps) => {
   const theme = useTheme();
 
+  // 백엔드에서 받은 데이터의 엔터를 구분하여 처리
+  const formatCode = (content: React.ReactNode): React.ReactNode => {
+    if (typeof content === 'string') {
+      // 문자열인 경우 엔터(\n)를 <br>로 변환
+      return content.split('\n').map((line, index, array) => (
+        <span key={index}>
+          {line}
+          {index < array.length - 1 && <br />}
+        </span>
+      ));
+    }
+    return content;
+  };
+
   return (
     <div css={codeBlockContainerStyle(theme)}>
       <div css={badgeContainerStyle(theme)}>
-        <div css={badgeStyle(theme)}>
-          <span>{language}</span>
-        </div>
+        <div css={badgeStyle(theme)}>{language}</div>
       </div>
-      <pre>
-        <code css={codeStyle(theme)}>{children}</code>
+      <pre css={preStyle}>
+        <code css={codeStyle(theme)}>{formatCode(children)}</code>
       </pre>
     </div>
   );
@@ -45,18 +57,21 @@ const badgeStyle = (theme: Theme) => css`
   background: #fff9c4;
   padding: 4px 12px;
   border-radius: 20px;
+  color: ${theme.colors.text.default};
+  font-size: ${theme.typography['12Medium'].fontSize};
+`;
 
-  span {
-    color: ${theme.colors.text.default};
-    font-size: ${theme.typography['12Medium'].fontSize};
-  }
+const preStyle = css`
+  margin: 0;
+  padding: 20px;
+  overflow-x: auto;
 `;
 
 const codeStyle = (theme: Theme) => css`
   font-family: 'D2Coding', 'Courier New', monospace;
-  font-size: 14px;
+  font-size: ${theme.typography['16Medium'].fontSize};
   line-height: 1.6;
   color: ${theme.colors.surface.default};
-  white-space: pre;
-  padding: 20px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 `;
