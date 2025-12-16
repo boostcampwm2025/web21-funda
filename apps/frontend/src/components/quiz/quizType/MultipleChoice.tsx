@@ -1,8 +1,8 @@
+import { CodeBlock } from '@comp/CodeBlock';
+import { QuizOption } from '@comp/quiz/QuizOption';
 import { css, useTheme } from '@emotion/react';
 
-import type { Theme } from '../../../styles/theme';
-import { CodeBlock } from '../../CodeBlock';
-import { QuizOption } from '../QuizOption';
+import type { Theme } from '@/styles/theme';
 
 export interface MultipleChoiceQuestion {
   id: number;
@@ -60,13 +60,6 @@ export const MultipleChoice = ({
           );
         })}
       </div>
-
-      {question.explanation && showResult && (
-        <div css={explanationStyle(theme)}>
-          <span css={explanationIconStyle}>💡</span>
-          <span>{question.explanation}</span>
-        </div>
-      )}
     </div>
   );
 };
@@ -86,21 +79,4 @@ const optionsContainerStyle = css`
   flex-direction: column;
   gap: 12px;
   margin-bottom: 24px;
-`;
-
-const explanationStyle = (theme: Theme) => css`
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  background: ${theme.colors.surface.default};
-  border-radius: ${theme.borderRadius.medium};
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  color: ${theme.colors.text.default};
-`;
-
-const explanationIconStyle = css`
-  font-size: 20px;
-  flex-shrink: 0;
 `;

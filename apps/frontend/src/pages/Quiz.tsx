@@ -1,15 +1,12 @@
+import { Button } from '@comp/Button';
+import { QuizHeader } from '@comp/quiz/QuizHeader';
+import { MultipleChoice, type MultipleChoiceQuestion } from '@comp/quiz/quizType/MultipleChoice';
 import { css, useTheme } from '@emotion/react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { Button } from '../components/Button';
-import { QuizHeader } from '../components/quiz/QuizHeader';
-import {
-  MultipleChoice,
-  type MultipleChoiceQuestion,
-} from '../components/quiz/quizType/MultipleChoice';
-import { useModal } from '../contexts/ModalContext';
-import type { Theme } from '../styles/theme';
+import { useModal } from '@/contexts/ModalContext';
+import type { Theme } from '@/styles/theme';
 
 // TODO: 타입 분리
 type QuestionStatus = 'idle' | 'checking' | 'checked';
@@ -25,9 +22,7 @@ const QUESTIONS: MultipleChoiceQuestion[] = [
   {
     id: 2,
     question: '다음 코드에서 빈칸에 들어갈 메서드는?',
-    code: `const arr = [1, 2, 3, 4, 5];
-const doubled = arr.       (x => x * 2);
-console.log(doubled); // [2, 4, 6, 8, 10]`,
+    code: `const arr = [1, 2, 3, 4, 5];\nconst doubled = arr.       (x => x * 2);\nconsole.log(doubled); // [2, 4, 6, 8, 10]`,
     options: ['filter', 'map', 'reduce', 'forEach', 'for ... of'],
     correctAnswer: 1,
     explanation: 'map() 메서드는 배열의 각 요소를 변환하여 새로운 배열을 반환합니다.',
@@ -66,7 +61,12 @@ export const Quiz = () => {
     if (currentQuestionStatus !== 'idle') return;
 
     const newSelectedAnswers = [...selectedAnswers];
-    newSelectedAnswers[currentQuestionIndex] = optionIndex;
+    // Toggle 로직: 이미 선택된 옵션을 다시 클릭하면 선택 해제
+    if (newSelectedAnswers[currentQuestionIndex] === optionIndex) {
+      newSelectedAnswers[currentQuestionIndex] = -1;
+    } else {
+      newSelectedAnswers[currentQuestionIndex] = optionIndex;
+    }
     setSelectedAnswers(newSelectedAnswers);
   };
 
@@ -77,7 +77,7 @@ export const Quiz = () => {
 
     // 정답 확인 요청 시뮬레이션
     // TODO: 실제 요청 시간으로 대체
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     setCurrentQuestionStatus('checked');
     // 정답 제출 완료 상태 업데이트
@@ -97,7 +97,7 @@ export const Quiz = () => {
 
   // TODO: 내용 구현 및 분리
   const handleShowExplanation = () => {
-    openModal('문제 해설', <div>{currentQuestion.explanation || '내용 준비 중입니다.'}</div>);
+    openModal('문제 해설', <div>내용 준비 중입니다.</div>);
   };
 
   const handleShowReport = () => {
@@ -132,6 +132,13 @@ export const Quiz = () => {
             onOptionClick={handleOptionClick}
             disabled={currentQuestionStatus !== 'idle'}
           />
+
+          {currentQuestion.explanation && showResult && (
+            <div css={explanationStyle(theme)}>
+              <span css={explanationIconStyle}>💡</span>
+              <span>{currentQuestion.explanation}</span>
+            </div>
+          )}
 
           <div css={actionsContainerStyle(theme)}>
             {showResult ? (
@@ -233,6 +240,24 @@ const actionsContainerStyle = (_theme: Theme) => css`
 
 const actionButtonStyle = css`
   flex: 1;
+`;
+
+const explanationStyle = (theme: Theme) => css`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: ${theme.colors.surface.default};
+  border-radius: ${theme.borderRadius.medium};
+  font-size: ${theme.typography['16Medium'].fontSize};
+  line-height: ${theme.typography['16Medium'].lineHeight};
+  color: ${theme.colors.text.default};
+  margin-bottom: 24px;
+`;
+
+const explanationIconStyle = css`
+  font-size: 20px;
+  flex-shrink: 0;
 `;
 
 const ReportModalContent = () => {
