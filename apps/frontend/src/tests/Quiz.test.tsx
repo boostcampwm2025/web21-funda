@@ -1,12 +1,14 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
-import { Quiz } from '@/pages/Quiz';
-import { MemoryRouter } from 'react-router-dom';
-import { ModalProvider } from '@/contexts/ModalContext';
 import { ThemeProvider } from '@emotion/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it } from 'vitest';
+
+import { ModalProvider } from '@/contexts/ModalContext';
+import { Quiz } from '@/pages/Quiz';
 import { lightTheme } from '@/styles/theme';
-const renderQuiz = () => {
-  return render(
+
+const renderQuiz = () =>
+  render(
     <ThemeProvider theme={lightTheme}>
       <ModalProvider>
         <MemoryRouter>
@@ -15,7 +17,6 @@ const renderQuiz = () => {
       </ModalProvider>
     </ThemeProvider>,
   );
-};
 
 describe('Quiz 컴포넌트 테스트', () => {
   it('사용자가 옵션을 클릭하면 선택 상태가 되고, 정답 확인 시 해설이 표시된다', async () => {

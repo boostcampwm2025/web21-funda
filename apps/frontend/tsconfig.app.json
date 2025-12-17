@@ -31,5 +31,5 @@
       "@comp/*": ["src/components/*"]
     }
   },
-  "include": ["src", ".storybook/**/*", "vitest.shims.d.ts"]
+  "include": ["src", ".storybook/**/*", "vitest.shims.d.ts", "vitest.setup.ts"]
 }
