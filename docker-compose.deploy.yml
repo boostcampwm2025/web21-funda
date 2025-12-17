@@ -30,7 +30,7 @@ services:
       - ./apps/backend/.env.production # create with DB URL, secrets, CLIENT_ORIGIN, etc.
     environment:
       NODE_ENV: production
-      CLIENT_ORIGIN: http://localhost
+      CLIENT_ORIGIN: https://funda.website
     ports:
       - '3000:3000'
     depends_on:
@@ -43,10 +43,13 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
       args:
-        VITE_API_BASE_URL: http://localhost/api
+        VITE_API_BASE_URL: https://funda.website/api
     container_name: funda-frontend
     ports:
       - '80:80'
+      - '443:443'
+    volumes:
+      - ../funda-cert:/etc/nginx/certs:ro
     depends_on:
       backend:
         condition: service_started
