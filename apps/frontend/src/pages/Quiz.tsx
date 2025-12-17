@@ -204,10 +204,11 @@ const quizCardContainerStyle = (theme: Theme) => css`
   padding: 32px;
   display: flex;
   flex-direction: column;
-  min-height: min-content;
+  height: 100%;
 
   @media (min-width: 768px) {
     max-width: 45rem;
+    height: min-content;
     margin: 0 auto;
     border-radius: ${theme.borderRadius.large};
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
