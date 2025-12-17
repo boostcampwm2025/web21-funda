@@ -99,8 +99,8 @@ export default function App() {
         styles={css`
           body {
             background: ${isDarkMode
-              ? 'linear-gradient(180deg, #3f3b5e 0%, #2e345d 100%)'
-              : 'linear-gradient(180deg, #f7f7fc 0%, #eef1ff 100%)'};
+              ? '#1c1d2bff'
+              : 'linear-gradient(180deg, #faf5ff 0%, #eff6ff 50%, #eef2ff 100%)'};
           }
         `}
       />
