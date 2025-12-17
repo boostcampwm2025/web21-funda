@@ -1,13 +1,7 @@
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "@emotion/react",
-    // IDE에서 자동완성을 위해 추가
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"],
-      "@comp/*": ["src/components/*"]
-    }
+    "jsxImportSource": "@emotion/react"
   },
   "files": [],
   "references": [

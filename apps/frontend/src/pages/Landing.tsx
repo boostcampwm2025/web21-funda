@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../components/Button';
@@ -8,6 +9,14 @@ export const Landing = () => {
   const theme = useTheme();
   const navigate = useNavigate();
 
+  const handleStart = useCallback(() => {
+    navigate('/fields');
+  }, [navigate]);
+
+  const handleLogin = useCallback(() => {
+    navigate('/login');
+  }, [navigate]);
+
   return (
     <div css={containerStyle()}>
       <div css={placeholderStyle(theme)}></div>
@@ -16,10 +25,10 @@ export const Landing = () => {
           "컴퓨터 사이언스를 배우기 위한 <br /> 가장 재밌고 효과적인 방법"
         </h1>
         <div css={buttonGroupStyle}>
-          <Button variant="primary" onClick={() => navigate('/fields')} fullWidth>
+          <Button variant="primary" onClick={handleStart} fullWidth>
             사용해 보기
           </Button>
-          <Button variant="secondary" onClick={() => navigate('/login')} fullWidth>
+          <Button variant="secondary" onClick={handleLogin} fullWidth>
             전 이미 계정이 있어요
           </Button>
         </div>

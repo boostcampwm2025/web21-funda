@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../components/Button';
@@ -8,14 +9,13 @@ export const AuthCheck = () => {
   const theme = useTheme();
   const navigate = useNavigate();
 
-  const handleLogin = () => {
+  const handleLogin = useCallback(() => {
     navigate('/login');
-  };
+  }, [navigate]);
 
-  const handleContinue = () => {
-    // 그냥 사용하기 - 메인 페이지로 이동
+  const handleContinue = useCallback(() => {
     navigate('/learn');
-  };
+  }, [navigate]);
 
   return (
     <div css={containerStyle()}>

@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../components/Button';
@@ -15,6 +16,10 @@ const streakData = {
 export const Streak = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+
+  const handleNavigate = useCallback(() => {
+    navigate('/learn');
+  }, [navigate]);
 
   return (
     <div css={containerStyle}>
@@ -37,12 +42,7 @@ export const Streak = () => {
           })}
         </div>
         <p css={encouragementStyle(theme)}>계속 학습해서 {streakData.days + 1}일차로 이어가세요!</p>
-        <Button
-          variant="secondary"
-          onClick={() => navigate('/learn')}
-          fullWidth
-          css={buttonStyle()}
-        >
+        <Button variant="secondary" onClick={handleNavigate} fullWidth css={buttonStyle()}>
           클릭하여 넘어가기
         </Button>
       </div>

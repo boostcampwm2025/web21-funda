@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../components/Button';
@@ -7,6 +8,10 @@ import type { Theme } from '../styles/theme';
 export const ServicePreparation = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+
+  const handleNavigate = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
 
   return (
     <div css={containerStyle()}>
@@ -18,7 +23,7 @@ export const ServicePreparation = () => {
         가능한 빠른 시일 내에 준비하여 찾아 뵙겠습니다.
       </p>
       <div css={buttonWrapperStyle}>
-        <Button variant="primary" onClick={() => navigate('/')} fullWidth>
+        <Button variant="primary" onClick={handleNavigate} fullWidth>
           메인 페이지로 이동
         </Button>
       </div>

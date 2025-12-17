@@ -1,5 +1,5 @@
 import { css, useTheme } from '@emotion/react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../components/Button';
@@ -21,19 +21,21 @@ export const Fields = () => {
   const navigate = useNavigate();
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
 
-  const toggleField = (fieldId: string) => {
-    const newSelected = new Set(selectedFields);
-    if (newSelected.has(fieldId)) {
-      newSelected.delete(fieldId);
-    } else {
-      newSelected.add(fieldId);
-    }
-    setSelectedFields(newSelected);
-  };
+  const toggleField = useCallback((fieldId: string) => {
+    setSelectedFields(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(fieldId)) {
+        newSelected.delete(fieldId);
+      } else {
+        newSelected.add(fieldId);
+      }
+      return newSelected;
+    });
+  }, []);
 
-  const handleComplete = () => {
+  const handleComplete = useCallback(() => {
     navigate('/learn');
-  };
+  }, [navigate]);
 
   return (
     <div css={containerStyle()}>
@@ -129,7 +131,6 @@ const fieldButtonStyle = (theme: Theme, isSelected: boolean) => css`
   background: ${theme.colors.surface.strong};
   border: 2px solid ${isSelected ? theme.colors.primary.main : theme.colors.border.default};
   border-radius: ${theme.borderRadius.medium};
-  cursor: pointer;
   transition: all 150ms ease;
   box-shadow: ${isSelected
     ? `0 4px 12px ${theme.colors.primary.surface}`

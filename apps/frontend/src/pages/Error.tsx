@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../components/Button';
@@ -7,6 +8,10 @@ import type { Theme } from '../styles/theme';
 export const Error = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+
+  const handleNavigate = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
 
   return (
     <div css={containerStyle()}>
@@ -17,7 +22,7 @@ export const Error = () => {
         접근할 수 없는 페이지입니다.
       </p>
       <div css={buttonWrapperStyle}>
-        <Button variant="primary" onClick={() => navigate('/')} fullWidth>
+        <Button variant="primary" onClick={handleNavigate} fullWidth>
           메인 페이지로 이동
         </Button>
       </div>

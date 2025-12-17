@@ -1,7 +1,7 @@
 import { css, type CSSObject, useTheme } from '@emotion/react';
 import type { ButtonHTMLAttributes } from 'react';
 
-import type { Theme } from '../styles/theme';
+import type { Theme } from '@/styles/theme';
 
 type Variant = 'primary' | 'secondary';
 
@@ -43,7 +43,6 @@ const baseStyle = (theme: Theme, fullWidth: boolean) => css`
   padding: 12px;
   border: 0;
   border-radius: ${theme.borderRadius.medium};
-  cursor: pointer;
   transition:
     transform 150ms ease,
     box-shadow 150ms ease,

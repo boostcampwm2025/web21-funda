@@ -1,20 +1,21 @@
 import { css, useTheme } from '@emotion/react';
+import { useCallback } from 'react';
 
 import { Button } from '../components/Button';
 import type { Theme } from '../styles/theme';
 
-const handleGoogleLogin = () => {
-  // eslint-disable-next-line
-  console.log('Google 로그인');
-};
-
-const handleGitHubLogin = () => {
-  // eslint-disable-next-line
-  console.log('GitHub 로그인');
-};
-
 export const Login = () => {
   const theme = useTheme();
+
+  const handleGoogleLogin = useCallback(() => {
+    // eslint-disable-next-line
+    console.log('Google 로그인');
+  }, []);
+
+  const handleGitHubLogin = useCallback(() => {
+    // eslint-disable-next-line
+    console.log('GitHub 로그인');
+  }, []);
 
   return (
     <div css={containerStyle()}>
