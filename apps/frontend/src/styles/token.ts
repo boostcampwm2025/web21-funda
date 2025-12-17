@@ -13,17 +13,17 @@ export const palette = {
     900: '#14142B',
   },
   primary: {
-    surface: '#D1CEF9',
+    surface: '#b4b5ff8e',
     light: '#A29AFF',
     main: '#6559EA',
     dark: '#4A3FB8',
   },
   success: {
-    light: '#DCFCE7',
+    light: 'rgba(178, 254, 205, 0.53)',
     main: '#02D05C',
   },
   error: {
-    surface: '#FFE2E2',
+    surface: '#ff9e9e8a',
     main: '#FB2C36',
   },
 };
