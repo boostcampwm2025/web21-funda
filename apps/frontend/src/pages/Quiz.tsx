@@ -204,7 +204,7 @@ const quizCardContainerStyle = (theme: Theme) => css`
   padding: 32px;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 100%;
 
   @media (min-width: 768px) {
     max-width: 45rem;

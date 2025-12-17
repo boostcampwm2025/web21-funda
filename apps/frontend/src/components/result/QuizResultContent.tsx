@@ -112,14 +112,13 @@ const containerStyle = css`
   gap: 32px;
   min-height: 100vh;
   padding: 48px 24px;
-  background: linear-gradient(180deg, #eef1ff 0%, #f7f7fc 100%);
 `;
 
 const titleStyle = (theme: Theme) => css`
   font-size: ${theme.typography['32Bold'].fontSize};
   line-height: ${theme.typography['32Bold'].lineHeight};
   font-weight: ${theme.typography['32Bold'].fontWeight};
-  color: ${theme.colors.primary.dark};
+  color: ${theme.colors.primary.main};
   margin: 0;
   text-align: center;
 `;
