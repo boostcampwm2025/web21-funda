@@ -3,7 +3,14 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.storybook.tsbuildinfo",
     "composite": true,
-    "incremental": true
+    "incremental": true,
+    "jsxImportSource": "@emotion/react",
+    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@comp/*": ["src/components/*"]
+    }
   },
-  "include": [".storybook/**/*"]
+  "include": [".storybook/**/*", "src/**/*"]
 }

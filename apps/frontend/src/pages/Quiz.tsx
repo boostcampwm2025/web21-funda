@@ -50,7 +50,9 @@ export const Quiz = () => {
   const [currentQuestionStatus, setCurrentQuestionStatus] = useState<QuestionStatus>('idle');
 
   const currentQuestion = QUESTIONS[currentQuestionIndex];
-  const selectedAnswer = selectedAnswers[currentQuestionIndex];
+  if (!currentQuestion) return null;
+
+  const selectedAnswer = selectedAnswers[currentQuestionIndex] ?? -1;
   const isAnswerSelected = selectedAnswer !== -1;
   const isLastQuestion = currentQuestionIndex === QUESTIONS.length - 1;
   // 정답을 제출한 문제만 카운트
