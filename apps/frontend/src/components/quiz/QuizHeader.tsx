@@ -91,12 +91,7 @@ const headerContentStyle = css`
 `;
 
 const closeButtonStyle = (theme: Theme) => css`
-  color: ${theme.colors.text.default};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
+  font-size: ${theme.typography['20Medium'].fontSize};
 `;
 
 const progressContainerStyle = (theme: Theme) => css`
@@ -161,12 +156,8 @@ const modalTitleStyle = (theme: Theme) => css`
   margin: 0;
 `;
 
-const modalCloseButtonStyle = css`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
+const modalCloseButtonStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['20Medium'].fontSize};
 `;
 
 const modalBodyStyle = (theme: Theme) => css`
