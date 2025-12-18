@@ -1,8 +1,6 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-
-// https://vite.dev/config/
 import path from 'node:path';
 import svgr from 'vite-plugin-svgr';
 import { fileURLToPath } from 'node:url';
@@ -29,7 +27,22 @@ export default defineConfig({
     },
   },
   test: {
+    globals: true,
     projects: [
+      // 2. 일반 단위 테스트 프로젝트 추가 (Quiz.test.tsx 등을 담당)
+      {
+        test: {
+          name: 'unit',
+          globals: true,
+          environment: 'jsdom',
+          include: ['src/**/*.test.{ts,tsx}'],
+          setupFiles: ['./vitest.setup.ts'],
+          alias: {
+            '@': path.resolve(dirname, './src'),
+            '@comp': path.resolve(dirname, './src/components'),
+          },
+        },
+      },
       {
         extends: true,
         plugins: [
