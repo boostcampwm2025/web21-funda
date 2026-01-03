@@ -4,6 +4,7 @@ on:
   push:
     branches: ['feat/ci-cd']
     # branches: ['main', 'develop']
+    # 1번 테스트
 
 jobs:
   build:
