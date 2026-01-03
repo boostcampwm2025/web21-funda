@@ -1,0 +1,99 @@
+name: Funda Monorepo CI/CD
+
+on:
+  push:
+    branches: ['main', 'develop']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # 1. pnpm 및 Node.js 환경 세팅
+      - name: install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: set node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      # 2. 의존성 설치
+      - name: install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 테스트 코드 실행. 현재는 테스트 코드가 없으므로 주석 처리.
+      # - name: run tests
+      #   run: pnpm -r test?? --filter 사용? 어떻게 해야할지는 테스트코드 작성 후 결정
+
+      # 3. FE 환경변수 파일 생성 (빌드 시점에 주입되어 이미지에 포함되도록)
+      - name: create FE env file
+        run: |
+          mkdir -p apps/frontend
+          printf '%s' "${{ secrets.ENV_FE_PROD }}" > ./apps/frontend/.env.production
+
+      # 4. NCP NCR 로그인
+      - name: login to NCR
+        if: github.ref == 'refs/heads/main'
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.NCR_REGISTRY }}
+          username: ${{ secrets.NCP_ACCESS_KEY }}
+          password: ${{ secrets.NCP_SECRET_KEY }}
+
+      # 5. Docker 이미지 빌드 및 푸시
+      - name: build and push BE
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.backend
+          # main 브랜치일 때만 NCR로 이미지를 push
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ secrets.NCR_REGISTRY }}/funda-backend:latest
+
+      - name: build and push FE
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          # main 브랜치일 때만 NCR로 이미지를 push
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ secrets.NCR_REGISTRY }}/funda-frontend:latest
+
+  deploy:
+    # main 브랜치일때만 서버에 배포
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: deploy to NCP Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # 경로 설정
+            APP_DIR=~/web21-funda
+            mkdir -p $APP_DIR/apps/backend
+
+            # docker-compose.deploy.yml 파일용 환경 변수 파일 생성
+            printf "NCR_REGISTRY=%s\nDB_ROOT_PASSWORD=%s\nDB_USER=%s\nDB_PASSWORD=%s\n" \
+              "${{ secrets.NCR_REGISTRY }}" \
+              "${{ secrets.DB_ROOT_PASSWORD }}" \
+              "${{ secrets.DB_USER }}" \
+              "${{ secrets.DB_PASSWORD }}" > .env
+
+            # 백엔드 환경 변수 주입
+            printf '%s' "${{ secrets.ENV_BE_PROD }}" > "$APP_DIR/apps/backend/.env.production"
+
+            # 서버 로그인 및 배포 실행
+            cd $APP_DIR
+            echo "${{ secrets.NCP_SECRET_KEY }}" | docker login ${{ secrets.NCR_REGISTRY }} -u ${{ secrets.NCP_ACCESS_KEY }} --password-stdin
+            docker compose -f docker-compose.deploy.yml pull
+            docker compose -f docker-compose.deploy.yml up -d
+            docker image prune -f

@@ -6,28 +6,25 @@ services:
     container_name: funda-mysql
     environment:
       MYSQL_DATABASE: funda
-      MYSQL_USER: funda_prod
-      MYSQL_PASSWORD: funda_prod_pw
-      MYSQL_ROOT_PASSWORD: root_pw
+      # 아래 변수들은 배포 시 생성되는 .env 파일에서 자동으로 채워짐
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       TZ: Asia/Seoul
-    ports:
-      - '3306:3306'
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${MYSQL_ROOT_PASSWORD}']
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${DB_ROOT_PASSWORD}']
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
+    image: ${NCR_REGISTRY}/funda-backend:latest
     container_name: funda-backend
     env_file:
-      - ./apps/backend/.env.production # create with DB URL, secrets, CLIENT_ORIGIN, etc.
+      - ./apps/backend/.env.production
     environment:
       NODE_ENV: production
       CLIENT_ORIGIN: https://funda.website
@@ -39,17 +36,13 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-      args:
-        VITE_API_BASE_URL: https://funda.website/api
+    image: ${NCR_REGISTRY}/funda-frontend:latest
     container_name: funda-frontend
     ports:
       - '80:80'
       - '443:443'
     volumes:
-      - ../funda-cert:/etc/nginx/certs:ro
+      - /root/funda-cert:/etc/nginx/certs:ro
     depends_on:
       backend:
         condition: service_started
