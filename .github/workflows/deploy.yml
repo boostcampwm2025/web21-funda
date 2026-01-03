@@ -2,7 +2,8 @@ name: Funda Monorepo CI/CD
 
 on:
   push:
-    branches: ['main', 'develop']
+    branches: ['feat/ci-cd']
+    # branches: ['main', 'develop']
 
 jobs:
   build:
@@ -42,7 +43,8 @@ jobs:
 
       # 4. NCP NCR 로그인
       - name: login to NCR
-        if: github.ref == 'refs/heads/main'
+        # if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/feat/ci-cd'
         uses: docker/login-action@v2
         with:
           registry: ${{ secrets.NCR_REGISTRY }}
@@ -56,7 +58,8 @@ jobs:
           context: .
           file: ./Dockerfile.backend
           # main 브랜치일 때만 NCR로 이미지를 push
-          push: ${{ github.ref == 'refs/heads/main' }}
+          # push: ${{ github.ref == 'refs/heads/main' }}
+          push: ${{ github.ref == 'refs/heads/feat/ci-cd' }}
           tags: ${{ secrets.NCR_REGISTRY }}/funda-backend:latest
 
       - name: build and push FE
@@ -65,12 +68,14 @@ jobs:
           context: .
           file: ./Dockerfile.frontend
           # main 브랜치일 때만 NCR로 이미지를 push
-          push: ${{ github.ref == 'refs/heads/main' }}
+          # push: ${{ github.ref == 'refs/heads/main' }}
+          push: ${{ github.ref == 'refs/heads/feat/ci-cd' }}
           tags: ${{ secrets.NCR_REGISTRY }}/funda-frontend:latest
 
   deploy:
     # main 브랜치일때만 서버에 배포
-    if: github.ref == 'refs/heads/main'
+    # if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/feat/ci-cd'
     needs: build
     runs-on: ubuntu-latest
     steps:
