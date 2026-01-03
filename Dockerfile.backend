@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20-bullseye-slim AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm --filter backend build
 RUN pnpm --filter backend deploy --prod /app/deploy/backend
 
-FROM node:20-alpine AS runner
+FROM node:20-bullseye-slim AS runner
 
 WORKDIR /app
 
