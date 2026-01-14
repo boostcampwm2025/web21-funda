@@ -23,8 +23,8 @@ import { useAuthStore } from '@/store/authStore';
 
 // 보호된 페이지를 위한 공통 로더
 const protectedLoader = () => {
-  const isLoggedIn = useAuthStore.getState().isLoggedIn;
-  if (!isLoggedIn) return redirect('/login');
+  const authStatus = useAuthStore.getState().authStatus;
+  if (authStatus !== 'authenticated') return redirect('/login');
   return null;
 };
 

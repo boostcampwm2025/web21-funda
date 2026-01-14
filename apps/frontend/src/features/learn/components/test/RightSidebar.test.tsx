@@ -47,10 +47,43 @@ vi.mock('react-router-dom', async () => {
 const mockUseAuthStore = vi.fn(() => false);
 
 vi.mock('@/store/authStore', () => ({
-  useAuthStore: (selector: (state: { isLoggedIn: boolean }) => boolean) => {
-    const state = { isLoggedIn: mockUseAuthStore() };
+  useAuthStore: (selector: (state: { authStatus: string; user: unknown }) => boolean) => {
+    const isLoggedIn = mockUseAuthStore();
+    const state = {
+      authStatus: isLoggedIn ? 'authenticated' : 'unauthenticated',
+      user: isLoggedIn
+        ? {
+            id: 1,
+            displayName: 'Test User',
+            email: 'test@example.com',
+            role: 'user',
+            heartCount: 5,
+            maxHeartCount: 5,
+            experience: 100,
+            currentStreak: 3,
+            provider: 'github',
+          }
+        : null,
+    };
     return selector(state);
   },
+  useAuthUser: () => {
+    const isLoggedIn = mockUseAuthStore();
+    return isLoggedIn
+      ? {
+          id: 1,
+          displayName: 'Test User',
+          email: 'test@example.com',
+          role: 'user',
+          heartCount: 5,
+          maxHeartCount: 5,
+          experience: 100,
+          currentStreak: 3,
+          provider: 'github',
+        }
+      : null;
+  },
+  useIsLoggedIn: () => mockUseAuthStore(),
 }));
 
 const mockGetFields = vi.fn();

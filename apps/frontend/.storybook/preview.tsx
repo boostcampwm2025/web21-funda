@@ -2,7 +2,7 @@ import { ThemeProvider } from '@emotion/react';
 import type { Preview } from '@storybook/react-vite';
 import { useEffect } from 'react';
 
-import { initialState, useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/store/authStore';
 import { darkTheme, lightTheme } from '@/styles/theme';
 
 import '@/styles/main.css';
@@ -45,9 +45,35 @@ const preview: Preview = {
       const targetState = authStatus === 'logged-in';
 
       useEffect(() => {
-        useAuthStore.setState({ isLoggedIn: targetState });
+        if (targetState) {
+          useAuthStore.setState({
+            authStatus: 'authenticated',
+            user: {
+              id: 1,
+              displayName: 'Test User',
+              email: 'test@example.com',
+              role: 'user',
+              heartCount: 5,
+              maxHeartCount: 5,
+              experience: 100,
+              currentStreak: 3,
+              provider: 'github',
+            },
+            hasSessionHint: true,
+          });
+        } else {
+          useAuthStore.setState({
+            authStatus: 'unauthenticated',
+            user: null,
+            hasSessionHint: false,
+          });
+        }
         return () => {
-          useAuthStore.setState(initialState);
+          useAuthStore.setState({
+            authStatus: 'unknown',
+            user: null,
+            hasSessionHint: false,
+          });
         };
       }, [targetState]);
       return (

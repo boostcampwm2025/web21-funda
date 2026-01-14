@@ -20,8 +20,8 @@ vi.mock('@/hooks/useStorage', () => ({
 }));
 
 vi.mock('@/store/authStore', () => ({
-  useAuthStore: (selector: (state: { isLoggedIn: boolean }) => boolean) => {
-    const state = { isLoggedIn: mockUseAuthStore() };
+  useAuthStore: (selector: (state: { authStatus: string }) => boolean) => {
+    const state = { authStatus: mockUseAuthStore() ? 'authenticated' : 'unauthenticated' };
     return selector(state);
   },
 }));

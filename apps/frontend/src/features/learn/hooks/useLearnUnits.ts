@@ -16,7 +16,7 @@ export const useLearnUnits = () => {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const unitRefs = useRef(new Map<number, HTMLElement>());
-  const isLoggedIn = useAuthStore(state => state.isLoggedIn);
+  const isLoggedIn = useAuthStore(state => state.authStatus === 'authenticated');
 
   /**
    * 현재 활성화된 유닛을 반환합니다.
