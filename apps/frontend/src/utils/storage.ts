@@ -28,6 +28,7 @@ export interface QuizStorageData {
   solved_step_history: number[];
   // step_id별 퀴즈 시작 시간 (step_id: timestamp)
   quiz_started_at: Record<number, number>;
+  has_session_hint: boolean;
 }
 
 const STORAGE_KEY = 'QUIZ_V1';
@@ -41,6 +42,7 @@ const DEFAULT_STATE: QuizStorageData = {
     current_quiz_step_id: 0,
   },
   quiz_started_at: {},
+  has_session_hint: false,
 };
 
 // 사용할 스토리지 함수
@@ -86,7 +88,7 @@ export const storageUtil = {
     const current = storageUtil.get();
     const updated = {
       ...current,
-      [key]: { ...current[key], ...value },
+      [key]: { ...(current[key] as object), ...value },
     };
     storageUtil.set(updated);
     return updated;
@@ -161,5 +163,12 @@ export const storageUtil = {
   getQuizStartedAt: (stepId: number): number | null => {
     const current = storageUtil.get();
     return current.quiz_started_at[stepId] ?? null;
+  },
+
+  setSessionHint: (hasSession: boolean): QuizStorageData => {
+    const current = storageUtil.get();
+    const updated = { ...current, has_session_hint: hasSession };
+    storageUtil.set(updated);
+    return updated;
   },
 };

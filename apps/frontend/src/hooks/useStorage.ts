@@ -42,11 +42,19 @@ export const useStorage = () => {
     [],
   );
 
+  // 세션 힌트 업데이트
+  const updateSessionHint = useCallback((hasSession: boolean) => {
+    const updated = storageUtil.setSessionHint(hasSession);
+    setStorageData(updated);
+  }, []);
+
   return {
     storageData,
     progress: storageData.progress,
     uiState: storageData.ui_state,
     solvedStepHistory: storageData.solved_step_history,
+    hasSessionHint: storageData.has_session_hint,
+    updateSessionHint,
     updateProgress,
     updateUIState,
     addStepHistory,
