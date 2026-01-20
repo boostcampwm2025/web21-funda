@@ -15,11 +15,9 @@ import type {
 } from '@/feat/quiz/types';
 import { useSound } from '@/hooks/useSound';
 import { useStorage } from '@/hooks/useStorage';
-import { shuffleQuizOptions } from '@/pages/quiz/utils/shuffleQuizOptions';
 import { authService } from '@/services/authService';
 import { quizService, type QuizSubmissionRequest } from '@/services/quizService';
 import { useAuthStore, useIsAuthReady } from '@/store/authStore';
-import { shuffleArray } from '@/utils/shuffleArray';
 /**
  * 퀴즈 풀이 페이지 컴포넌트
  * 퀴즈 데이터 로딩, 답변 상태 관리, 정답 확인 및 페이지 이동 로직을 담당합니다.
@@ -179,14 +177,10 @@ export const Quiz = () => {
       // 캐시 없으면 서버에서 가져오기
       const quizzesData = await quizService.getQuizzesByStep(step_id);
 
-      // 데이터 처리 (호버할 때 안 했으면 여기서)
-      const shuffledQuizzes = await shuffleArray(quizzesData);
-      const finalQuizzes = await shuffleQuizOptions(shuffledQuizzes);
-
-      setQuizzes(finalQuizzes);
-      setSelectedAnswers(new Array(finalQuizzes.length).fill(null));
-      setQuestionStatuses(new Array(finalQuizzes.length).fill('idle'));
-      setQuizSolutions(new Array(finalQuizzes.length).fill(null));
+      setQuizzes(quizzesData);
+      setSelectedAnswers(new Array(quizzesData.length).fill(null));
+      setQuestionStatuses(new Array(quizzesData.length).fill('idle'));
+      setQuizSolutions(new Array(quizzesData.length).fill(null));
     } catch {
       setLoadError(true);
     } finally {
