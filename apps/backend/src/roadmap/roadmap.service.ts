@@ -196,11 +196,12 @@ export class RoadmapService {
   }
 
   /**
-   * 스텝 ID 기준으로 퀴즈 목록을 조회한다.
+   * 스텝 ID 기준으로 퀴즈 목록을 조회한다 (랜덤 셔플 후 limit개 반환).
    * @param stepId 스텝 ID
+   * @param limit 반환할 퀴즈 개수 (기본값: 10)
    * @returns 퀴즈 목록
    */
-  async getQuizzesByStepId(stepId: number): Promise<QuizResponse[]> {
+  async getQuizzesByStepId(stepId: number, limit: number = 10): Promise<QuizResponse[]> {
     const step = await this.stepRepository.findOne({
       where: { id: stepId },
       select: { id: true },
@@ -215,7 +216,13 @@ export class RoadmapService {
       order: { id: 'ASC' },
     });
 
-    return Promise.all(quizzes.map(quiz => this.toQuizResponse(quiz)));
+    // 모든 퀴즈를 셔플
+    const shuffledQuizzes = this.shuffleArray(quizzes);
+
+    // limit개만 선택
+    const limitedQuizzes = shuffledQuizzes.slice(0, limit);
+
+    return Promise.all(limitedQuizzes.map(quiz => this.toQuizResponse(quiz)));
   }
 
   /**
@@ -776,6 +783,22 @@ export class RoadmapService {
    */
   private sortByOrderIndex<T extends { orderIndex: number }>(items: T[]): T[] {
     return [...items].sort((a, b) => a.orderIndex - b.orderIndex);
+  }
+
+  /**
+   * Fisher-Yates 알고리즘을 사용하여 배열을 랜덤하게 섞는다.
+   * @param array 섞을 배열
+   * @returns 섞인 배열 (원본 보존)
+   */
+  private shuffleArray<T>(array: T[]): T[] {
+    const shuffled: T[] = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = shuffled[i]!;
+      shuffled[i] = shuffled[j]!;
+      shuffled[j] = temp;
+    }
+    return shuffled;
   }
 
   private async saveSolveLog(params: {
