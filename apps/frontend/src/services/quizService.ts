@@ -33,9 +33,10 @@ export const quizService = {
   /**
    * 특정 스텝의 퀴즈 목록을 가져옵니다.
    * @param stepId 스텝 ID
+   * @param limit 가져올 퀴즈 개수 (기본값: 10)
    */
-  async getQuizzesByStep(stepId: number): Promise<QuizQuestion[]> {
-    return apiFetch.get<QuizQuestion[]>(`/steps/${stepId}/quizzes`);
+  async getQuizzesByStep(stepId: number, limit = 10): Promise<QuizQuestion[]> {
+    return apiFetch.get<QuizQuestion[]>(`/steps/${stepId}/quizzes?limit=${limit}`);
   },
 
   /**
