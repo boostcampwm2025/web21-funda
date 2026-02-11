@@ -61,6 +61,7 @@ export const useReportQuizData = ({ reportId }: Params) => {
     loading,
     error,
     report,
+    setReport,
     quiz,
     setQuiz,
     refresh,

@@ -5,6 +5,8 @@ interface ReportRequest {
   userId?: number;
 }
 
+export type ReportStatus = 'pending' | 'resolved';
+
 export interface ReportResponse {
   id: number;
   quizId: number;
@@ -13,7 +15,21 @@ export interface ReportResponse {
   userDisplayName?: string | null;
   userEmail?: string | null;
   report_description: string;
+  status: ReportStatus;
   createdAt: string;
+}
+
+export interface GetReportsParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedReportsResponse {
+  items: ReportResponse[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 export const reportService = {
@@ -30,8 +46,16 @@ export const reportService = {
    * 모든 신고 목록을 조회합니다.
    * @returns 신고 목록
    */
-  async getReports(): Promise<ReportResponse[]> {
-    return apiFetch.get<ReportResponse[]>('/quizzes/reports');
+  async getReports({
+    page = 1,
+    limit = 10,
+  }: GetReportsParams = {}): Promise<PaginatedReportsResponse> {
+    const queryParams = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+
+    return apiFetch.get<PaginatedReportsResponse>(`/quizzes/reports?${queryParams.toString()}`);
   },
 
   /**
@@ -39,5 +63,11 @@ export const reportService = {
    */
   async getReport(reportId: number): Promise<ReportResponse> {
     return apiFetch.get<ReportResponse>(`/quizzes/reports/${reportId}`);
+  },
+
+  async updateReportStatus(reportId: number, status: ReportStatus): Promise<ReportResponse> {
+    return apiFetch.patch<ReportResponse>(`/quizzes/reports/${reportId}/status`, {
+      status,
+    });
   },
 };
