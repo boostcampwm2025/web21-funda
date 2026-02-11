@@ -3,8 +3,8 @@ import { useMemo, useState } from 'react';
 
 import type { CorrectAnswerType, MatchingPair, QuizQuestion, QuizType } from '@/feat/quiz/types';
 import type { AdminQuizDetailResponse, AdminQuizOption } from '@/services/adminService';
-import { reportService } from '@/services/reportService';
 import type { ReportResponse } from '@/services/reportService';
+import { reportService } from '@/services/reportService';
 import { useModal } from '@/store/modalStore';
 import { useToast } from '@/store/toastStore';
 
