@@ -285,7 +285,7 @@ flowchart LR
 - **서비스 아이덴티티 강화**: 텍스트 중심 학습 UI에 생동감 있는 비주얼 경험 제공
 <table>
   <tr align="center">
-    <td colspan="2"><strong>실시간 배틀 화면</strong></td>
+    <td colspan="2"><strong>3D 캐릭터</strong></td>
   </tr>
   <tr align="center">
     <td>
