@@ -7,6 +7,7 @@ import {
   NotFoundException,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -28,6 +29,8 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 
 import { CreateReportDto } from './dto/create-report.dto';
+import { UpdateReportStatusDto } from './dto/update-report-status.dto';
+import { ReportStatus } from './entities/report-status.enum';
 import { ReportService } from './report.service';
 
 @ApiTags('Quizzes')
@@ -119,6 +122,46 @@ export class ReportController {
       throw new NotFoundException('신고를 찾을 수 없습니다.');
     }
     return report;
+  }
+
+  @Patch('reports/:reportId/status')
+  @ApiBearerAuth('accessToken')
+  @ApiOperation({
+    summary: '신고 처리 상태 변경 (관리자)',
+    description: '신고 상태를 처리 대기/처리 완료로 변경합니다.',
+  })
+  @ApiParam({
+    name: 'reportId',
+    description: '신고 ID',
+    example: 1,
+  })
+  @ApiBody({
+    type: UpdateReportStatusDto,
+    examples: {
+      '처리 완료': {
+        value: { status: ReportStatus.RESOLVED },
+      },
+      '처리 대기': {
+        value: { status: ReportStatus.PENDING },
+      },
+    },
+  })
+  @ApiOkResponse({
+    description: '신고 상태 변경 성공',
+  })
+  @ApiNotFoundResponse({
+    description: '해당 ID의 신고를 찾을 수 없음',
+  })
+  @UseGuards(JwtAccessGuard, AdminGuard)
+  async updateStatus(
+    @Param('reportId', ParseIntPipe) reportId: number,
+    @Body() dto: UpdateReportStatusDto,
+  ) {
+    const updated = await this.service.updateStatus(reportId, dto.status);
+    if (!updated) {
+      throw new NotFoundException('신고를 찾을 수 없습니다.');
+    }
+    return updated;
   }
 
   @Post(':quizId/reports')

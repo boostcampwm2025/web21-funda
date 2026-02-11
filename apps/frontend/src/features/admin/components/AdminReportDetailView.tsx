@@ -37,6 +37,7 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
   const isReportOpen = ui.isReportOpen;
   const tab = ui.tab as TabKey;
   const isSaving = ui.isSaving;
+  const isUpdatingReportStatus = ui.isUpdatingReportStatus;
   const hasChanges = ui.hasChanges;
 
   const draftQuestion = draft.draftQuestion;
@@ -76,6 +77,18 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
           </div>
         </div>
         <div css={topRightStyle}>
+          <Button
+            variant={report.status === 'resolved' ? 'secondary' : 'primary'}
+            type="button"
+            onClick={actions.toggleReportStatus}
+            disabled={isUpdatingReportStatus}
+          >
+            {isUpdatingReportStatus
+              ? '처리 중...'
+              : report.status === 'resolved'
+                ? '처리 대기로 변경'
+                : '처리 완료'}
+          </Button>
           {!isEditing ? (
             <Button variant="primary" type="button" onClick={actions.startEdit}>
               수정하기
@@ -382,6 +395,19 @@ export const AdminReportDetailView = (props: AdminReportDetailViewProps) => {
               </div>
             </div>
             <div css={reportItemStyle(theme)}>
+              <div css={reportLabelStyle(theme)}>처리 상태</div>
+              <div css={reportValueStyle(theme)}>
+                <span
+                  css={statusBadgeStyle(
+                    theme,
+                    report.status === 'resolved' ? 'resolved' : 'pending',
+                  )}
+                >
+                  {report.status === 'resolved' ? '처리 완료' : '처리 대기'}
+                </span>
+              </div>
+            </div>
+            <div css={reportItemStyle(theme)}>
               <div css={reportLabelStyle(theme)}>날짜</div>
               <div css={reportValueStyle(theme)}>
                 {new Date(report.createdAt).toLocaleString('ko-KR')}
@@ -682,4 +708,17 @@ const reportLabelStyle = (theme: Theme) => css`
 const reportValueStyle = (theme: Theme) => css`
   color: ${theme.colors.text.default};
   line-height: 1.55;
+`;
+
+const statusBadgeStyle = (theme: Theme, status: 'pending' | 'resolved') => css`
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: ${theme.borderRadius.small};
+  font-size: ${theme.typography['12Medium'].fontSize};
+  font-weight: 800;
+  background: ${status === 'resolved'
+    ? theme.colors.primary.semilight
+    : theme.colors.grayscale[200]};
+  color: ${status === 'resolved' ? theme.colors.primary.main : theme.colors.grayscale[700]};
 `;

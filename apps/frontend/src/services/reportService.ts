@@ -5,6 +5,8 @@ interface ReportRequest {
   userId?: number;
 }
 
+export type ReportStatus = 'pending' | 'resolved';
+
 export interface ReportResponse {
   id: number;
   quizId: number;
@@ -13,6 +15,7 @@ export interface ReportResponse {
   userDisplayName?: string | null;
   userEmail?: string | null;
   report_description: string;
+  status: ReportStatus;
   createdAt: string;
 }
 
@@ -60,5 +63,11 @@ export const reportService = {
    */
   async getReport(reportId: number): Promise<ReportResponse> {
     return apiFetch.get<ReportResponse>(`/quizzes/reports/${reportId}`);
+  },
+
+  async updateReportStatus(reportId: number, status: ReportStatus): Promise<ReportResponse> {
+    return apiFetch.patch<ReportResponse>(`/quizzes/reports/${reportId}/status`, {
+      status,
+    });
   },
 };

@@ -52,7 +52,10 @@ export const ReportsContainer = ({
               aria-label="리포트 ID"
               tabIndex={0}
             >
-              리포트 ID
+              ID
+            </div>
+            <div css={headerCellStyle(theme)} role="columnheader" aria-label="상태" tabIndex={0}>
+              상태
             </div>
             <div css={headerCellStyle(theme)} role="columnheader" aria-label="퀴즈 ID" tabIndex={0}>
               퀴즈 ID
@@ -79,6 +82,16 @@ export const ReportsContainer = ({
                 />
                 <div css={cellStyle(theme)} role="cell">
                   {report.id}
+                </div>
+                <div css={cellStyle(theme)} role="cell">
+                  <span
+                    css={statusBadgeStyle(
+                      theme,
+                      report.status === 'resolved' ? 'resolved' : 'pending',
+                    )}
+                  >
+                    {report.status === 'resolved' ? '처리 완료' : '처리 대기'}
+                  </span>
                 </div>
                 <div css={cellStyle(theme)} role="cell">
                   {report.quizId}
@@ -124,7 +137,7 @@ const tableWrapperStyle = css`
 `;
 
 const gridStyle = (theme: Theme) => css`
-  min-width: 720px;
+  min-width: 900px;
   background: ${theme.colors.surface.strong};
   display: grid;
   grid-auto-rows: minmax(52px, auto);
@@ -132,7 +145,7 @@ const gridStyle = (theme: Theme) => css`
 
 const headerRowStyle = (theme: Theme) => css`
   display: grid;
-  grid-template-columns: 110px 110px 180px minmax(200px, 1fr);
+  grid-template-columns: 50px 100px 100px 160px minmax(200px, 1fr);
   background-color: ${theme.colors.surface.bold};
   position: sticky;
   top: 0;
@@ -143,7 +156,7 @@ const headerRowStyle = (theme: Theme) => css`
 const gridRowStyle = (theme: Theme) => css`
   position: relative;
   display: grid;
-  grid-template-columns: 110px 110px 180px minmax(200px, 1fr);
+  grid-template-columns: 50px 100px 100px 160px minmax(200px, 1fr);
   border-bottom: 1px solid ${theme.colors.border.default};
   background: transparent;
   border-left: none;
@@ -176,9 +189,24 @@ const cellStyle = (theme: Theme) => css`
   word-break: break-word;
   display: flex;
   align-items: center;
+  gap: 8px;
   min-width: 0;
   position: relative;
   z-index: 1;
+`;
+
+const statusBadgeStyle = (theme: Theme, status: 'pending' | 'resolved') => css`
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: ${theme.borderRadius.small};
+  font-size: ${theme.typography['12Medium'].fontSize};
+  font-weight: 800;
+  background: ${status === 'resolved'
+    ? theme.colors.primary.semilight
+    : theme.colors.grayscale[200]};
+  color: ${status === 'resolved' ? theme.colors.primary.main : theme.colors.grayscale[700]};
+  white-space: nowrap;
 `;
 
 const headerCellStyle = (theme: Theme) => css`
