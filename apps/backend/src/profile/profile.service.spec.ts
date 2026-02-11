@@ -105,6 +105,7 @@ describe('ProfileService', () => {
     followRepository = {
       countBy: followCountMock,
       findOne: followFindOneMock,
+      findOneBy: followFindOneMock,
       save: followSaveMock,
       create: followCreateMock,
       find: followFindMock,
@@ -155,7 +156,7 @@ describe('ProfileService', () => {
       solvedCount: '12',
     });
     stepAttemptQueryBuilderMock.getRawOne.mockResolvedValue({
-      totalDurationSeconds: '3600',
+      totalSeconds: '3600',
     });
 
     const result = await service.getProfileSummary(1);
@@ -192,7 +193,7 @@ describe('ProfileService', () => {
     await expect(service.followUser(1, 1)).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('팔로워 목록을 사용자 요약으로 반환한다', async () => {
+  it('팔로워 목록 조회 시 캐릭터 프로필 이미지를 우선 적용한다', async () => {
     userFindOneMock.mockResolvedValue({ id: 1 } as User);
     followFindMock.mockResolvedValue([
       {
@@ -200,6 +201,7 @@ describe('ProfileService', () => {
           id: 10,
           displayName: '리더',
           profileImageUrl: 'https://example.com/avatar.png',
+          profileCharacter: { imageUrl: 'https://example.com/character.png' },
           experience: 200,
           currentTier: { id: 1, name: 'BRONZE', orderIndex: 1 },
         },
@@ -208,13 +210,49 @@ describe('ProfileService', () => {
 
     const result = await service.getFollowers(1);
 
+    expect(followFindMock).toHaveBeenCalledWith({
+      where: { followingId: 1 },
+      relations: { follower: { currentTier: true, profileCharacter: true } },
+    });
     expect(result).toHaveLength(1);
     const [firstFollower] = result;
     if (!firstFollower) {
       throw new Error('팔로워 목록이 비어 있습니다.');
     }
     expect(firstFollower.userId).toBe(10);
+    expect(firstFollower.profileImageUrl).toBe('https://example.com/character.png');
     expect(firstFollower.tier?.name).toBe('BRONZE');
+  });
+
+  it('팔로잉 목록 조회 시 캐릭터 프로필이 없으면 기본 이미지를 사용한다', async () => {
+    userFindOneMock.mockResolvedValue({ id: 1 } as User);
+    followFindMock.mockResolvedValue([
+      {
+        following: {
+          id: 20,
+          displayName: '팔로잉유저',
+          profileImageUrl: 'https://example.com/fallback.png',
+          profileCharacter: null,
+          experience: 190,
+          currentTier: { id: 2, name: 'SILVER', orderIndex: 2 },
+        },
+      } as UserFollow,
+    ]);
+
+    const result = await service.getFollowing(1);
+
+    expect(followFindMock).toHaveBeenCalledWith({
+      where: { followerId: 1 },
+      relations: { following: { currentTier: true, profileCharacter: true } },
+    });
+    expect(result).toHaveLength(1);
+    const [firstFollowing] = result;
+    if (!firstFollowing) {
+      throw new Error('팔로잉 목록이 비어 있습니다.');
+    }
+    expect(firstFollowing.userId).toBe(20);
+    expect(firstFollowing.profileImageUrl).toBe('https://example.com/fallback.png');
+    expect(firstFollowing.tier?.name).toBe('SILVER');
   });
 
   it('팔로워 목록을 영문 우선 이름순으로 정렬한다', async () => {
