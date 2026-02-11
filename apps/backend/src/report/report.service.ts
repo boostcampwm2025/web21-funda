@@ -53,9 +53,11 @@ export class ReportService {
   }
 
   async findAll(page: number, limit: number): Promise<PaginatedReportAdminResult> {
-    const total = await this.repo.count();
+    const baseQuery = this.buildAdminReportQueryBuilder();
+    const total = await baseQuery.clone().getCount();
 
-    const items = await this.buildAdminReportQueryBuilder()
+    const items = await baseQuery
+      .clone()
       .orderBy('report.createdAt', 'ASC')
       .offset((page - 1) * limit)
       .limit(limit)

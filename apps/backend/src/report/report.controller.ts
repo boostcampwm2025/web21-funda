@@ -58,6 +58,7 @@ export class ReportController {
             userDisplayName: '홍길동',
             userEmail: 'hong@example.com',
             report_description: '문제/해설에 오타가 있어요',
+            status: ReportStatus.PENDING,
             createdAt: '2026-01-21T13:00:00Z',
           },
         ],
