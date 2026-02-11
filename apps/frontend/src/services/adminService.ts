@@ -2,6 +2,51 @@ import type { WeeklyRankingResult } from '@/features/leaderboard/types';
 
 import { apiFetch } from './api';
 
+export interface AdminQuizOption {
+  id: string;
+  text: string;
+}
+
+export interface AdminQuizMatchingPair {
+  left: string;
+  right: string;
+}
+
+export interface AdminQuizDetailResponse {
+  id: number;
+  type: string;
+  content: {
+    question: string;
+    options?: AdminQuizOption[];
+    code_metadata?: { language?: string; snippet: string };
+    matching_metadata?: {
+      left: Array<{ id: string; text: string }>;
+      right: Array<{ id: string; text: string }>;
+    };
+  };
+  answer: unknown;
+  explanation: string | null;
+  difficulty: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminQuizUpdateRequest {
+  question?: string;
+  explanation?: string | null;
+  options?: AdminQuizOption[];
+  code?: string;
+  language?: string;
+  correctOptionId?: string;
+  correctPairs?: AdminQuizMatchingPair[];
+}
+
+export interface AdminQuizUpdateResponse {
+  id: number;
+  updated: boolean;
+  updatedFields: Array<'question' | 'explanation' | 'options' | 'code' | 'language' | 'answer'>;
+}
+
 export interface UploadSummary {
   processed: number;
   fieldsCreated: number;
@@ -152,5 +197,22 @@ export const adminService = {
     }
 
     return apiFetch.get<WeeklyRankingResult>(`/admin/ranking/weekly?${query.toString()}`);
+  },
+
+  /**
+   * 관리자용 퀴즈 단건 상세 조회
+   */
+  async getQuiz(quizId: number): Promise<AdminQuizDetailResponse> {
+    return apiFetch.get<AdminQuizDetailResponse>(`/admin/quizzes/${quizId}`);
+  },
+
+  /**
+   * 관리자용 퀴즈 부분 수정 (변경된 필드만 전송 권장)
+   */
+  async updateQuiz(
+    quizId: number,
+    payload: AdminQuizUpdateRequest,
+  ): Promise<AdminQuizUpdateResponse> {
+    return apiFetch.patch<AdminQuizUpdateResponse>(`/admin/quizzes/${quizId}`, payload);
   },
 };

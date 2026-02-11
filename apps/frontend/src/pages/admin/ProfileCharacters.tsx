@@ -31,17 +31,9 @@ export const AdminProfileCharacters = () => {
     const trimmedUrl = imageUrl.trim();
     const parsedPrice = Number(priceDiamonds);
 
-    if (!trimmedUrl) {
-      return false;
-    }
-
-    if (!Number.isFinite(parsedPrice)) {
-      return false;
-    }
-
-    if (parsedPrice < 0) {
-      return false;
-    }
+    if (!trimmedUrl) return false;
+    if (!Number.isFinite(parsedPrice)) return false;
+    if (parsedPrice < 0) return false;
 
     return true;
   }, [imageUrl, priceDiamonds]);
@@ -173,18 +165,25 @@ export const AdminProfileCharacters = () => {
 
 const pageStyle = css`
   width: 100%;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  display: flex;
   gap: 24px;
   align-items: start;
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+  }
 `;
 
 const cardStyle = (theme: Theme) => css`
-  width: 100%;
+  flex: 1;
   background: ${theme.colors.surface.strong};
   padding: 32px;
   border-radius: ${theme.borderRadius.large};
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 1024px) {
+    width: 100%;
+  }
 `;
 
 const titleStyle = (theme: Theme) => css`
@@ -266,14 +265,8 @@ const statusBoxStyle = (theme: Theme) => css`
 
 const statusDot = (status: string) => {
   let color = '#eab308';
-
-  if (status === '등록 완료') {
-    color = '#22c55e';
-  }
-
-  if (status === '등록 실패') {
-    color = '#ef4444';
-  }
+  if (status === '등록 완료') color = '#22c55e';
+  if (status === '등록 실패') color = '#ef4444';
 
   return css`
     width: 8px;

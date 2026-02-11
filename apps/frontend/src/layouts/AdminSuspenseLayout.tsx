@@ -11,19 +11,34 @@ interface AdminLayoutProps {
 }
 
 const ADMIN_TABS = [
-  { label: '랭킹 관리', path: '/admin/leaderboard' },
-  { label: '퀴즈 리포트', path: '/admin/quizzes/reports' },
-  { label: '퀴즈 업로드', path: '/admin/quizzes/upload' },
-  { label: '유닛 개요 업로드', path: '/admin/units/overview/upload' },
-  { label: '프로필 캐릭터 관리', path: '/admin/profile-characters/manage' },
-  { label: '프로필 캐릭터 등록', path: '/admin/profile-characters' },
+  {
+    label: '랭킹 관리',
+    to: '/admin/leaderboard',
+    isActive: (pathname: string) => pathname === '/admin/leaderboard',
+  },
+  {
+    label: '퀴즈 리포트',
+    to: '/admin/quizzes/reports',
+    isActive: (pathname: string) => pathname.startsWith('/admin/quizzes/reports'),
+  },
+  // Uploads use a query string for the selected type; active state should ignore search params.
+  {
+    label: '업로드',
+    to: '/admin/uploads?type=quizzes',
+    isActive: (pathname: string) => pathname === '/admin/uploads',
+  },
+  {
+    label: '프로필 캐릭터 관리',
+    to: '/admin/profile-characters/manage',
+    isActive: (pathname: string) => pathname === '/admin/profile-characters/manage',
+  },
 ] as const;
 
 export const AdminSuspenseLayout = ({ children }: AdminLayoutProps) => {
   const theme = useTheme();
   const location = useLocation();
 
-  if (location.pathname === '/admin') return <Navigate to={ADMIN_TABS[0].path} replace />;
+  if (location.pathname === '/admin') return <Navigate to={ADMIN_TABS[0].to} replace />;
 
   return (
     <div css={containerStyle}>
@@ -34,9 +49,12 @@ export const AdminSuspenseLayout = ({ children }: AdminLayoutProps) => {
           <nav css={tabListStyle}>
             {ADMIN_TABS.map(tab => (
               <Link
-                key={tab.path}
-                to={tab.path}
-                css={[tabItemStyle(theme), location.pathname === tab.path && activeTabStyle(theme)]}
+                key={tab.to}
+                to={tab.to}
+                css={[
+                  tabItemStyle(theme),
+                  tab.isActive(location.pathname) && activeTabStyle(theme),
+                ]}
               >
                 {tab.label}
               </Link>

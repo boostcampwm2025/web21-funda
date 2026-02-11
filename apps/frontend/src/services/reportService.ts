@@ -33,4 +33,11 @@ export const reportService = {
   async getReports(): Promise<ReportResponse[]> {
     return apiFetch.get<ReportResponse[]>('/quizzes/reports');
   },
+
+  /**
+   * 신고 단건을 조회합니다. (관리자)
+   */
+  async getReport(reportId: number): Promise<ReportResponse> {
+    return apiFetch.get<ReportResponse>(`/quizzes/reports/${reportId}`);
+  },
 };

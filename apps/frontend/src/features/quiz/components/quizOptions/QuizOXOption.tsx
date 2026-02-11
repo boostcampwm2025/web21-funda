@@ -12,6 +12,7 @@ export const QuizOXOption = ({
   isWrong,
   onClick,
   disabled,
+  size = 'default',
 }: QuizOptionProps) => {
   const theme = useTheme();
 
@@ -25,7 +26,7 @@ export const QuizOXOption = ({
       data-correct={isCorrect}
       data-wrong={isWrong}
       css={[
-        oxBaseStyle(theme),
+        oxBaseStyle(theme, size),
         S.commonHoverStyle(theme),
         isSelected && S.selectedOptionStyle(theme),
         isCorrect && S.correctOptionStyle(theme),
@@ -33,16 +34,17 @@ export const QuizOXOption = ({
         disabled && S.disabledOptionStyle,
       ]}
     >
-      <span css={oxTextStyle(theme)}>
+      <span css={oxTextStyle(theme, size)}>
         <TextWithCodeStyle text={option} />
       </span>
     </button>
   );
 };
 
-const oxBaseStyle = (theme: Theme) => css`
+const oxBaseStyle = (theme: Theme, size: QuizOptionProps['size']) => css`
   flex: 1;
-  aspect-ratio: 1 / 1.1;
+  aspect-ratio: ${size === 'compact' ? '1 / 0.85' : '1 / 1.1'};
+  min-height: ${size === 'compact' ? '180px' : 'unset'};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -53,7 +55,7 @@ const oxBaseStyle = (theme: Theme) => css`
   transition: all 0.2s ease;
 `;
 
-const oxTextStyle = (theme: Theme) => css`
-  font-size: 5rem;
+const oxTextStyle = (theme: Theme, size: QuizOptionProps['size']) => css`
+  font-size: ${size === 'compact' ? '3rem' : '5rem'};
   color: ${theme.colors.text.strong};
 `;

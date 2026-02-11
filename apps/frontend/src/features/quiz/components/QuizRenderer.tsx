@@ -20,6 +20,12 @@ interface QuizRendererProps {
   onSelectPosition?: (position: { x: number; y: number }) => void;
   showResult: boolean;
   disabled: boolean;
+  /**
+   * 렌더링 모드
+   * - solve: 기존 퀴즈 풀이용(기본)
+   * - readonly: 관리자/미리보기 등에서 UI만 보여주기 위한 모드(항상 disabled + 결과 표시)
+   */
+  mode?: 'solve' | 'readonly';
 }
 
 const QUIZ_MAP: Record<QuizType, React.ComponentType<QuizComponentProps>> = {
@@ -34,5 +40,16 @@ export const QuizRenderer = memo(({ question, ...props }: QuizRendererProps) => 
 
   if (!Component) return <div>지원하지 않는 퀴즈 유형입니다: {question.type}</div>;
 
-  return <Component content={question.content} {...props} />;
+  const effectiveProps =
+    props.mode === 'readonly'
+      ? {
+          ...props,
+          disabled: true,
+          showResult: true,
+          onAnswerChange: () => {},
+          onSelectPosition: undefined,
+        }
+      : props;
+
+  return <Component content={question.content} {...effectiveProps} />;
 });

@@ -1,6 +1,7 @@
-import { css, useTheme } from '@emotion/react';
+import { css, keyframes, useTheme } from '@emotion/react';
 import { useCallback, useEffect, useState } from 'react';
 
+import SVGIcon from '@/comp/SVGIcon';
 import { Button } from '@/components/Button';
 import {
   type AdminProfileCharacterItem,
@@ -149,13 +150,16 @@ export const AdminProfileCharacterManagement = () => {
             <h1 css={titleStyle(theme)}>프로필 캐릭터 관리</h1>
             <p css={descriptionStyle(theme)}>캐릭터별 가격과 노출 여부를 수정할 수 있습니다.</p>
           </div>
-          <Button
+          <button
             type="button"
             onClick={fetchCharacterRows}
             disabled={managementStatus === 'loading'}
+            css={refreshButtonStyle(theme, managementStatus === 'loading')}
+            aria-label="목록 새로고침"
+            title="목록 새로고침"
           >
-            목록 새로고침
-          </Button>
+            <SVGIcon icon="Refresh" size="sm" />
+          </button>
         </div>
 
         {managementStatus === 'loading' && (
@@ -275,6 +279,38 @@ const cardHeaderStyle = css`
   align-items: flex-start;
   gap: 16px;
   flex-wrap: wrap;
+`;
+
+const spinKeyframes = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const refreshButtonStyle = (theme: Theme, isRefreshing: boolean) => css`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: ${theme.colors.primary.main};
+  border-radius: ${theme.borderRadius.medium};
+  transition: background-color 150ms ease;
+
+  ${isRefreshing &&
+  css`
+    animation: ${spinKeyframes} 1s linear infinite;
+  `}
+
+  &:hover {
+    background: ${isRefreshing ? 'transparent' : theme.colors.surface.bold};
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
 `;
 
 const titleStyle = (theme: Theme) => css`

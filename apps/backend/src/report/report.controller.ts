@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  ParseIntPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -53,6 +62,32 @@ export class ReportController {
   @UseGuards(JwtAccessGuard, AdminGuard)
   async findAll() {
     return await this.service.findAll();
+  }
+
+  @Get('reports/:reportId')
+  @ApiBearerAuth('accessToken')
+  @ApiOperation({
+    summary: '신고 단건 조회 (관리자)',
+    description: '관리자 페이지에서 신고 상세를 조회합니다.',
+  })
+  @ApiParam({
+    name: 'reportId',
+    description: '신고 ID',
+    example: 1,
+  })
+  @ApiOkResponse({
+    description: '신고 상세 조회 성공',
+  })
+  @ApiNotFoundResponse({
+    description: '해당 ID의 신고를 찾을 수 없음',
+  })
+  @UseGuards(JwtAccessGuard, AdminGuard)
+  async findOne(@Param('reportId', ParseIntPipe) reportId: number) {
+    const report = await this.service.findOne(reportId);
+    if (!report) {
+      throw new NotFoundException('신고를 찾을 수 없습니다.');
+    }
+    return report;
   }
 
   @Post(':quizId/reports')

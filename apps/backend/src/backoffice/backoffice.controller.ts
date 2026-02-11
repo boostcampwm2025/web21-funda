@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   UploadedFiles,
@@ -25,6 +26,11 @@ import { AdminGuard } from '../auth/guards/admin.guard';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 
 import type {
+  AdminQuizDetailResponse,
+  AdminQuizUpdateRequest,
+  AdminQuizUpdateResponse,
+} from './dto/admin-quiz.dto';
+import type {
   AdminProfileCharacterItem,
   AdminProfileCharacterUpdateRequest,
 } from './dto/profile-character-admin.dto';
@@ -38,6 +44,36 @@ import { BackofficeService } from './backoffice.service';
 @UseGuards(JwtAccessGuard, AdminGuard)
 export class BackofficeController {
   constructor(private readonly backofficeService: BackofficeService) {}
+
+  @Get('quizzes/:quizId')
+  @ApiOperation({
+    summary: '퀴즈 단건 상세 조회 (관리자)',
+    description: '관리자 페이지에서 퀴즈 내용을 확인/수정하기 위한 상세 정보를 반환합니다.',
+  })
+  @ApiOkResponse({
+    description: '퀴즈 상세 조회 성공',
+  })
+  async getQuizForAdmin(
+    @Param('quizId', ParseIntPipe) quizId: number,
+  ): Promise<AdminQuizDetailResponse> {
+    return this.backofficeService.getQuizForAdmin(quizId);
+  }
+
+  @Patch('quizzes/:quizId')
+  @ApiOperation({
+    summary: '퀴즈 부분 수정 (관리자)',
+    description:
+      'question/options/explanation/code/language 중 변경된 필드만 보내면 해당 값만 반영합니다.',
+  })
+  @ApiOkResponse({
+    description: '퀴즈 수정 성공',
+  })
+  async updateQuizForAdmin(
+    @Param('quizId', ParseIntPipe) quizId: number,
+    @Body() payload: AdminQuizUpdateRequest,
+  ): Promise<AdminQuizUpdateResponse> {
+    return this.backofficeService.updateQuizForAdmin(quizId, payload);
+  }
 
   @Post('quizzes/upload')
   @UseInterceptors(FilesInterceptor('file'))

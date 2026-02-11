@@ -1,4 +1,5 @@
 import { css, useTheme } from '@emotion/react';
+import { useNavigate } from 'react-router-dom';
 
 import type { ReportResponse } from '@/services/reportService';
 import type { Theme } from '@/styles/theme';
@@ -11,6 +12,7 @@ export interface ReportsContainerProps {
 
 export const ReportsContainer = ({ reports, loading, error }: ReportsContainerProps) => {
   const theme = useTheme();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -32,22 +34,16 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
     <div css={tableWrapperStyle}>
       <div css={gridStyle(theme)} role="table" aria-label="신고 목록">
         <div css={headerRowStyle(theme)} role="row">
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="ID">
-            ID
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="리포트 ID" tabIndex={0}>
+            리포트 ID
           </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="Quiz ID">
-            Quiz ID
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="퀴즈 ID" tabIndex={0}>
+            퀴즈 ID
           </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="문제">
-            문제
-          </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="유저">
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="유저" tabIndex={0}>
             유저
           </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="신고 내용">
-            신고 내용
-          </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="날짜">
+          <div css={headerCellStyle(theme)} role="columnheader" aria-label="날짜" tabIndex={0}>
             날짜
           </div>
         </div>
@@ -58,6 +54,12 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
         ) : (
           reports.map(report => (
             <div key={report.id} css={gridRowStyle(theme)} role="row">
+              <button
+                type="button"
+                css={rowLinkButtonStyle}
+                onClick={() => navigate(`/admin/quizzes/reports/${report.id}`)}
+                aria-label={`신고 ${report.id} 상세로 이동`}
+              />
               <div css={cellStyle(theme)} role="cell">
                 {report.id}
               </div>
@@ -65,17 +67,11 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
                 {report.quizId}
               </div>
               <div css={cellStyle(theme)} role="cell">
-                {report.question ?? '-'}
-              </div>
-              <div css={cellStyle(theme)} role="cell">
                 {report.userDisplayName
                   ? report.userId
                     ? `${report.userDisplayName} (#${report.userId})`
                     : report.userDisplayName
                   : '게스트'}
-              </div>
-              <div css={cellStyle(theme)} role="cell">
-                {report.report_description}
               </div>
               <div css={cellStyle(theme)} role="cell">
                 {new Date(report.createdAt).toLocaleString('ko-KR')}
@@ -99,7 +95,7 @@ const tableWrapperStyle = css`
 `;
 
 const gridStyle = (theme: Theme) => css`
-  min-width: 860px;
+  min-width: 720px;
   background: ${theme.colors.surface.strong};
   display: grid;
   grid-auto-rows: minmax(52px, auto);
@@ -107,9 +103,7 @@ const gridStyle = (theme: Theme) => css`
 
 const headerRowStyle = (theme: Theme) => css`
   display: grid;
-  grid-template-columns:
-    80px 90px minmax(180px, 2fr) minmax(160px, 1.3fr) minmax(220px, 2.2fr)
-    160px;
+  grid-template-columns: 110px 110px 180px minmax(200px, 1fr);
   background-color: ${theme.colors.surface.bold};
   position: sticky;
   top: 0;
@@ -118,11 +112,31 @@ const headerRowStyle = (theme: Theme) => css`
 `;
 
 const gridRowStyle = (theme: Theme) => css`
+  position: relative;
   display: grid;
-  grid-template-columns:
-    80px 90px minmax(180px, 2fr) minmax(160px, 1.3fr) minmax(220px, 2.2fr)
-    160px;
+  grid-template-columns: 110px 110px 180px minmax(200px, 1fr);
   border-bottom: 1px solid ${theme.colors.border.default};
+  background: transparent;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+
+  &:hover {
+    background: ${theme.colors.surface.bold};
+  }
+`;
+
+const rowLinkButtonStyle = css`
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 2;
 `;
 
 const cellStyle = (theme: Theme) => css`
@@ -134,6 +148,8 @@ const cellStyle = (theme: Theme) => css`
   display: flex;
   align-items: center;
   min-width: 0;
+  position: relative;
+  z-index: 1;
 `;
 
 const headerCellStyle = (theme: Theme) => css`

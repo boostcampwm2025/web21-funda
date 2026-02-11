@@ -106,6 +106,7 @@ export interface QuizComponentProps {
   onSelectPosition?: (position: { x: number; y: number }) => void;
   showResult: boolean;
   disabled: boolean;
+  mode?: 'solve' | 'readonly';
 }
 
 /** 퀴즈의 옵션 컴포넌트 공통 매개견수 */
@@ -118,4 +119,5 @@ export interface QuizOptionProps {
   isWrong?: boolean;
   onClick: (event: MouseEvent<HTMLButtonElement>) => void;
   disabled?: boolean;
+  size?: 'default' | 'compact';
 }

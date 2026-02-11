@@ -99,7 +99,7 @@ export const JsonlUploadCard = memo(
 );
 
 const cardStyle = (theme: Theme) => css`
-  width: 100%;
+  flex: 1;
   max-width: 45rem;
   background: ${theme.colors.surface.strong};
   padding: 32px;

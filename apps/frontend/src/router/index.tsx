@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import { ErrorView } from '@/features/error/components/ErrorView';
 import { AdminSuspenseLayout } from '@/layouts/AdminSuspenseLayout';
@@ -18,24 +18,21 @@ import { LoginGuard } from '@/router/guards/LoginGuard';
 import { guestLoader, protectedLoader } from '@/router/loaders/authLoaders';
 
 // Lazy loading 컴포넌트들
-const AdminQuizUpload = lazy(() =>
-  import('@/pages/admin/QuizUpload').then(m => ({ default: m.AdminQuizUpload })),
-);
-const AdminUnitOverviewUpload = lazy(() =>
-  import('@/pages/admin/UnitOverviewUpload').then(m => ({ default: m.AdminUnitOverviewUpload })),
-);
 const AdminLeaderboard = lazy(() =>
   import('@/pages/admin/Leaderboard').then(m => ({ default: m.AdminLeaderboard })),
-);
-const AdminProfileCharacters = lazy(() =>
-  import('@/pages/admin/ProfileCharacters').then(m => ({ default: m.AdminProfileCharacters })),
 );
 const AdminProfileCharacterManagement = lazy(() =>
   import('@/pages/admin/ProfileCharacterManagement').then(m => ({
     default: m.AdminProfileCharacterManagement,
   })),
 );
+const AdminUploads = lazy(() =>
+  import('@/pages/admin/Uploads').then(m => ({ default: m.AdminUploads })),
+);
 const Reports = lazy(() => import('@/pages/admin/Reports').then(m => ({ default: m.Reports })));
+const AdminReportDetail = lazy(() =>
+  import('@/pages/admin/ReportDetail').then(m => ({ default: m.AdminReportDetail })),
+);
 
 const Leaderboard = lazy(() =>
   import('@/pages/Leaderboard').then(m => ({ default: m.Leaderboard })),
@@ -179,14 +176,26 @@ export const router = createBrowserRouter([
                 element: <AdminGuard />,
                 children: [
                   { path: 'leaderboard', element: <AdminLeaderboard /> },
-                  { path: 'quizzes/upload', element: <AdminQuizUpload /> },
-                  { path: 'units/overview/upload', element: <AdminUnitOverviewUpload /> },
+                  { path: 'uploads', element: <AdminUploads /> },
+                  // Backward-compatible redirects for old admin URLs.
+                  {
+                    path: 'quizzes/upload',
+                    element: <Navigate to="/admin/uploads?type=quizzes" replace />,
+                  },
+                  {
+                    path: 'units/overview/upload',
+                    element: <Navigate to="/admin/uploads?type=unit-overviews" replace />,
+                  },
                   { path: 'quizzes/reports', element: <Reports /> },
+                  { path: 'quizzes/reports/:reportId', element: <AdminReportDetail /> },
                   {
                     path: 'profile-characters/manage',
                     element: <AdminProfileCharacterManagement />,
                   },
-                  { path: 'profile-characters', element: <AdminProfileCharacters /> },
+                  {
+                    path: 'profile-characters',
+                    element: <Navigate to="/admin/uploads?type=profile-characters" replace />,
+                  },
                 ],
               },
             ],

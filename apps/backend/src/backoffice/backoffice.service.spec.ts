@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import type { DataSource, EntityManager, Repository } from 'typeorm';
 
 import { RedisService } from '../common/redis/redis.service';
+import { CodeFormatter } from '../common/utils/code-formatter';
 import { Unit } from '../roadmap/entities/unit.entity';
 
 import { BackofficeService } from './backoffice.service';
@@ -13,6 +14,7 @@ describe('BackofficeService', () => {
   let unitRepository: Partial<Repository<Unit>>;
   let transactionMock: jest.Mock;
   let redisService: Partial<RedisService>;
+  let codeFormatter: Partial<CodeFormatter>;
 
   beforeEach(() => {
     unitRepository = {
@@ -40,7 +42,15 @@ describe('BackofficeService', () => {
       del: jest.fn(),
     };
 
-    service = new BackofficeService(dataSource as DataSource, redisService as RedisService);
+    codeFormatter = {
+      format: jest.fn().mockImplementation(async (code: string) => code),
+    };
+
+    service = new BackofficeService(
+      dataSource as DataSource,
+      redisService as RedisService,
+      codeFormatter as CodeFormatter,
+    );
   });
 
   it('유닛 개요를 업로드하면 해당 유닛의 개요를 업데이트한다', async () => {
