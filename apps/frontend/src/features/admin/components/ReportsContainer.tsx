@@ -1,6 +1,7 @@
 import { css, useTheme } from '@emotion/react';
 import { useNavigate } from 'react-router-dom';
 
+import { Pagination } from '@/components/Pagination';
 import type { ReportResponse } from '@/services/reportService';
 import type { Theme } from '@/styles/theme';
 
@@ -8,9 +9,19 @@ export interface ReportsContainerProps {
   reports: ReportResponse[];
   loading: boolean;
   error: string | null;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
-export const ReportsContainer = ({ reports, loading, error }: ReportsContainerProps) => {
+export const ReportsContainer = ({
+  reports,
+  loading,
+  error,
+  currentPage,
+  totalPages,
+  onPageChange,
+}: ReportsContainerProps) => {
   const theme = useTheme();
   const navigate = useNavigate();
 
@@ -31,58 +42,75 @@ export const ReportsContainer = ({ reports, loading, error }: ReportsContainerPr
   }
 
   return (
-    <div css={tableWrapperStyle}>
-      <div css={gridStyle(theme)} role="table" aria-label="신고 목록">
-        <div css={headerRowStyle(theme)} role="row">
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="리포트 ID" tabIndex={0}>
-            리포트 ID
-          </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="퀴즈 ID" tabIndex={0}>
-            퀴즈 ID
-          </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="유저" tabIndex={0}>
-            유저
-          </div>
-          <div css={headerCellStyle(theme)} role="columnheader" aria-label="날짜" tabIndex={0}>
-            날짜
-          </div>
-        </div>
-        {reports.length === 0 ? (
-          <div css={emptyRowStyle(theme)} role="row">
-            신고가 없습니다.
-          </div>
-        ) : (
-          reports.map(report => (
-            <div key={report.id} css={gridRowStyle(theme)} role="row">
-              <button
-                type="button"
-                css={rowLinkButtonStyle}
-                onClick={() => navigate(`/admin/quizzes/reports/${report.id}`)}
-                aria-label={`신고 ${report.id} 상세로 이동`}
-              />
-              <div css={cellStyle(theme)} role="cell">
-                {report.id}
-              </div>
-              <div css={cellStyle(theme)} role="cell">
-                {report.quizId}
-              </div>
-              <div css={cellStyle(theme)} role="cell">
-                {report.userDisplayName
-                  ? report.userId
-                    ? `${report.userDisplayName} (#${report.userId})`
-                    : report.userDisplayName
-                  : '게스트'}
-              </div>
-              <div css={cellStyle(theme)} role="cell">
-                {new Date(report.createdAt).toLocaleString('ko-KR')}
-              </div>
+    <div css={containerStyle}>
+      <div css={tableWrapperStyle}>
+        <div css={gridStyle(theme)} role="table" aria-label="신고 목록">
+          <div css={headerRowStyle(theme)} role="row">
+            <div
+              css={headerCellStyle(theme)}
+              role="columnheader"
+              aria-label="리포트 ID"
+              tabIndex={0}
+            >
+              리포트 ID
             </div>
-          ))
-        )}
+            <div css={headerCellStyle(theme)} role="columnheader" aria-label="퀴즈 ID" tabIndex={0}>
+              퀴즈 ID
+            </div>
+            <div css={headerCellStyle(theme)} role="columnheader" aria-label="유저" tabIndex={0}>
+              유저
+            </div>
+            <div css={headerCellStyle(theme)} role="columnheader" aria-label="날짜" tabIndex={0}>
+              날짜
+            </div>
+          </div>
+          {reports.length === 0 ? (
+            <div css={emptyRowStyle(theme)} role="row">
+              신고가 없습니다.
+            </div>
+          ) : (
+            reports.map(report => (
+              <div key={report.id} css={gridRowStyle(theme)} role="row">
+                <button
+                  type="button"
+                  css={rowLinkButtonStyle}
+                  onClick={() => navigate(`/admin/quizzes/reports/${report.id}`)}
+                  aria-label={`신고 ${report.id} 상세로 이동`}
+                />
+                <div css={cellStyle(theme)} role="cell">
+                  {report.id}
+                </div>
+                <div css={cellStyle(theme)} role="cell">
+                  {report.quizId}
+                </div>
+                <div css={cellStyle(theme)} role="cell">
+                  {report.userDisplayName
+                    ? report.userId
+                      ? `${report.userDisplayName} (#${report.userId})`
+                      : report.userDisplayName
+                    : '게스트'}
+                </div>
+                <div css={cellStyle(theme)} role="cell">
+                  {new Date(report.createdAt).toLocaleString('ko-KR')}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
     </div>
   );
 };
+
+const containerStyle = css`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+`;
 
 const tableWrapperStyle = css`
   border-radius: 12px;
@@ -90,6 +118,7 @@ const tableWrapperStyle = css`
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   width: 100%;
+  min-width: 0;
   display: block;
   background: white;
 `;

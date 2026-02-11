@@ -18,6 +18,11 @@ export interface ReportAdminRow {
   userEmail: string | null;
 }
 
+export interface PaginatedReportAdminResult {
+  items: ReportAdminRow[];
+  total: number;
+}
+
 @Injectable()
 export class ReportService {
   constructor(@InjectRepository(Report) private repo: Repository<Report>) {}
@@ -44,10 +49,16 @@ export class ReportService {
     return await this.repo.save(entity);
   }
 
-  async findAll() {
-    return await this.buildAdminReportQueryBuilder()
+  async findAll(page: number, limit: number): Promise<PaginatedReportAdminResult> {
+    const total = await this.repo.count();
+
+    const items = await this.buildAdminReportQueryBuilder()
       .orderBy('report.createdAt', 'ASC')
+      .offset((page - 1) * limit)
+      .limit(limit)
       .getRawMany();
+
+    return { items, total };
   }
 
   async findOne(reportId: number): Promise<ReportAdminRow | null> {

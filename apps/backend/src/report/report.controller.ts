@@ -1,11 +1,14 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  DefaultValuePipe,
   Get,
   NotFoundException,
   Param,
   ParseIntPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -41,27 +44,55 @@ export class ReportController {
   @ApiOkResponse({
     description: '신고 목록을 성공적으로 조회함',
     schema: {
-      type: 'array',
-      items: {
-        example: {
-          id: 1,
-          quizId: 10,
-          question: '다음 중 HTTP 상태 코드 404의 의미는?',
-          userId: 3,
-          userDisplayName: '홍길동',
-          userEmail: 'hong@example.com',
-          report_description: '문제/해설에 오타가 있어요',
-          createdAt: '2026-01-21T13:00:00Z',
-        },
+      type: 'object',
+      example: {
+        items: [
+          {
+            id: 1,
+            quizId: 10,
+            question: '다음 중 HTTP 상태 코드 404의 의미는?',
+            userId: 3,
+            userDisplayName: '홍길동',
+            userEmail: 'hong@example.com',
+            report_description: '문제/해설에 오타가 있어요',
+            createdAt: '2026-01-21T13:00:00Z',
+          },
+        ],
+        total: 51,
+        page: 1,
+        limit: 10,
+        totalPages: 6,
       },
     },
+  })
+  @ApiBadRequestResponse({
+    description: 'page/limit 쿼리값이 잘못됨',
   })
   @ApiInternalServerErrorResponse({
     description: '서버 내부 오류',
   })
   @UseGuards(JwtAccessGuard, AdminGuard)
-  async findAll() {
-    return await this.service.findAll();
+  async findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    if (page < 1) {
+      throw new BadRequestException('page는 1 이상이어야 합니다.');
+    }
+    if (limit < 1) {
+      throw new BadRequestException('limit은 1 이상이어야 합니다.');
+    }
+    if (limit > 100) {
+      throw new BadRequestException('limit은 100 이하여야 합니다.');
+    }
+
+    const result = await this.service.findAll(page, limit);
+    return {
+      ...result,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(result.total / limit)),
+    };
   }
 
   @Get('reports/:reportId')
