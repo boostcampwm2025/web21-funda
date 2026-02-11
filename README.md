@@ -276,6 +276,47 @@ flowchart LR
   </tr>
 </table>
 
+### 🎭 3D 캐릭터
+
+학습 서비스에 게임적 재미를 더하기 위해 3D 캐릭터 콘텐츠를 제공합니다.
+
+- **캐릭터 애니메이션 체험**: 전용 화면에서 다양한 캐릭터 모션을 확인
+- **학습 흐름 연출**: 주요 화면에 캐릭터를 배치해 몰입감과 집중도 강화
+- **서비스 아이덴티티 강화**: 텍스트 중심 학습 UI에 생동감 있는 비주얼 경험 제공
+<table>
+  <tr align="center">
+    <td colspan="2"><strong>3D 캐릭터</strong></td>
+  </tr>
+  <tr align="center">
+    <td>
+      <img
+        src="https://github.com/user-attachments/assets/4317bd4d-7049-479d-bdca-c5c5ff12c110"
+        alt="대기화면"
+      />
+    </td>
+    <td>
+      <img
+        src="https://github.com/user-attachments/assets/42717173-e45e-491d-82c3-6a63ec6db126"
+        alt="문제풀이"
+      />
+    </td>
+  </tr>
+  <tr align="center">
+    <td>
+      <img
+        src="https://github.com/user-attachments/assets/75a53f54-8fe5-4f41-8f7a-f1dd940c77ec"
+        alt="정답확인"
+      />
+    </td>
+    <td>
+      <img
+        src="https://github.com/user-attachments/assets/a90736df-2f64-40ce-9ed4-430af3e78aa0"
+        alt="결과화면"
+      />
+    </td>
+  </tr>
+</table>
+
 ---
 
 ## 🧪 콘텐츠 생성 파이프라인

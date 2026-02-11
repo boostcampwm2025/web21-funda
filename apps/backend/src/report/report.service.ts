@@ -6,16 +6,23 @@ import { Quiz } from '../roadmap/entities/quiz.entity';
 import { User } from '../users/entities/user.entity';
 
 import { Report } from './entities/report.entity';
+import { ReportStatus } from './entities/report-status.enum';
 
 export interface ReportAdminRow {
   id: number;
   quizId: number;
   report_description: string;
+  status: ReportStatus;
   createdAt: Date;
   question: string | null;
   userId: number | null;
   userDisplayName: string | null;
   userEmail: string | null;
+}
+
+export interface PaginatedReportAdminResult {
+  items: ReportAdminRow[];
+  total: number;
 }
 
 @Injectable()
@@ -31,6 +38,7 @@ export class ReportService {
         'report.id AS id',
         'report.quizId AS quizId',
         'report.report_description AS report_description',
+        'report.status AS status',
         'report.createdAt AS createdAt',
         'quiz.question AS question',
         'user.id AS userId',
@@ -44,10 +52,18 @@ export class ReportService {
     return await this.repo.save(entity);
   }
 
-  async findAll() {
-    return await this.buildAdminReportQueryBuilder()
+  async findAll(page: number, limit: number): Promise<PaginatedReportAdminResult> {
+    const baseQuery = this.buildAdminReportQueryBuilder();
+    const total = await baseQuery.clone().getCount();
+
+    const items = await baseQuery
+      .clone()
       .orderBy('report.createdAt', 'ASC')
+      .offset((page - 1) * limit)
+      .limit(limit)
       .getRawMany();
+
+    return { items, total };
   }
 
   async findOne(reportId: number): Promise<ReportAdminRow | null> {
@@ -56,5 +72,10 @@ export class ReportService {
       .getRawOne();
 
     return (row ?? null) as ReportAdminRow | null;
+  }
+
+  async updateStatus(reportId: number, status: ReportStatus): Promise<ReportAdminRow | null> {
+    await this.repo.update({ id: reportId }, { status });
+    return this.findOne(reportId);
   }
 }

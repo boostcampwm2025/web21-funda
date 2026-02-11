@@ -177,7 +177,7 @@ export class ProfileService {
 
     const follows = await this.followRepository.find({
       where: { followingId: userId },
-      relations: { follower: { currentTier: true } },
+      relations: { follower: { currentTier: true, profileCharacter: true } },
     });
 
     const followers = follows
@@ -195,7 +195,7 @@ export class ProfileService {
 
     const follows = await this.followRepository.find({
       where: { followerId: userId },
-      relations: { following: { currentTier: true } },
+      relations: { following: { currentTier: true, profileCharacter: true } },
     });
 
     const followingUsers = follows
@@ -524,7 +524,7 @@ export class ProfileService {
     return {
       userId: user.id,
       displayName: user.displayName,
-      profileImageUrl: user.profileImageUrl ?? null,
+      profileImageUrl: user.profileCharacter?.imageUrl ?? user.profileImageUrl ?? null,
       experience: user.experience,
       tier: this.buildTierSummary(user.currentTier),
     };

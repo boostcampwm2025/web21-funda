@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import type { CorrectAnswerType, MatchingPair, QuizQuestion, QuizType } from '@/feat/quiz/types';
 import type { AdminQuizDetailResponse, AdminQuizOption } from '@/services/adminService';
 import type { ReportResponse } from '@/services/reportService';
+import { reportService } from '@/services/reportService';
 import { useModal } from '@/store/modalStore';
 import { useToast } from '@/store/toastStore';
 
@@ -36,6 +37,7 @@ export type AdminReportDetailModel = {
     isReportOpen: boolean;
     tab: 'edit' | 'preview';
     isSaving: boolean;
+    isUpdatingReportStatus: boolean;
     hasChanges: boolean;
   };
   draft: {
@@ -64,6 +66,7 @@ export type AdminReportDetailModel = {
     goEditTab: () => void;
     goPreviewTab: () => Promise<void>;
     save: () => Promise<void>;
+    toggleReportStatus: () => Promise<void>;
   };
 };
 
@@ -73,8 +76,9 @@ export const useAdminReportDetail = ({ reportId }: Params): AdminReportDetailMod
 
   const [isQuizOpen, setIsQuizOpen] = useState(true);
   const [isReportOpen, setIsReportOpen] = useState(true);
+  const [isUpdatingReportStatus, setIsUpdatingReportStatus] = useState(false);
 
-  const { loading, error, report, quiz, setQuiz } = useReportQuizData({ reportId });
+  const { loading, error, report, setReport, quiz, setQuiz } = useReportQuizData({ reportId });
 
   const quizType = useMemo(() => (quiz ? toQuizType(quiz.type) : null), [quiz]);
 
@@ -114,6 +118,33 @@ export const useAdminReportDetail = ({ reportId }: Params): AdminReportDetailMod
     draftMatchingPairs: draft.draftMatchingPairs,
   });
 
+  const toggleReportStatus = async () => {
+    if (!report) {
+      return;
+    }
+
+    const nextStatus = report.status === 'resolved' ? 'pending' : 'resolved';
+
+    setIsUpdatingReportStatus(true);
+    try {
+      const updatedReport = await reportService.updateReportStatus(report.id, nextStatus);
+      setReport(updatedReport);
+      showToast(
+        nextStatus === 'resolved'
+          ? '신고를 처리 완료로 변경했습니다.'
+          : '신고를 처리 대기로 변경했습니다.',
+      );
+    } catch (err) {
+      showToast(
+        err instanceof Error
+          ? err.message
+          : '신고 상태를 변경하지 못했습니다. 잠시 후 다시 시도해주세요.',
+      );
+    } finally {
+      setIsUpdatingReportStatus(false);
+    }
+  };
+
   return {
     data: {
       loading,
@@ -133,6 +164,7 @@ export const useAdminReportDetail = ({ reportId }: Params): AdminReportDetailMod
       isReportOpen,
       tab: saveFlow.tab,
       isSaving: saveFlow.isSaving,
+      isUpdatingReportStatus,
       hasChanges: saveFlow.hasChanges,
     },
     draft: {
@@ -161,6 +193,7 @@ export const useAdminReportDetail = ({ reportId }: Params): AdminReportDetailMod
       goEditTab: saveFlow.goEditTab,
       goPreviewTab: saveFlow.goPreviewTab,
       save: saveFlow.save,
+      toggleReportStatus,
     },
   };
 };
