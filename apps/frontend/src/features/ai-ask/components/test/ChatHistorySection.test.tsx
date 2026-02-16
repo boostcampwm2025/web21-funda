@@ -67,8 +67,8 @@ describe('ChatHistorySection', () => {
       ];
 
       renderChatHistory(items, new Set(), onToggle);
-      const questionButton = screen.getByText('테스트 질문').closest('button');
-      fireEvent.click(questionButton!);
+      const toggleButton = screen.getByRole('button', { name: '테스트 질문 답변 보기' });
+      fireEvent.click(toggleButton);
 
       expect(onToggle).toHaveBeenCalledWith(1);
     });
@@ -123,11 +123,9 @@ describe('ChatHistorySection', () => {
       ];
 
       renderChatHistory(items, new Set(), onToggle);
-      const questionButton = screen.getByText('테스트 질문').closest('button');
-      if (questionButton) {
-        fireEvent.keyDown(questionButton, { key: 'Enter' });
-        expect(onToggle).toHaveBeenCalledWith(1);
-      }
+      const toggleButton = screen.getByRole('button', { name: '테스트 질문 답변 보기' });
+      fireEvent.keyDown(toggleButton, { key: 'Enter' });
+      expect(onToggle).toHaveBeenCalledWith(1);
     });
 
     it('키보드 Space 키로 토글할 수 있다', () => {
@@ -145,11 +143,9 @@ describe('ChatHistorySection', () => {
       ];
 
       renderChatHistory(items, new Set(), onToggle);
-      const questionButton = screen.getByText('테스트 질문').closest('button');
-      if (questionButton) {
-        fireEvent.keyDown(questionButton, { key: ' ' });
-        expect(onToggle).toHaveBeenCalledWith(1);
-      }
+      const toggleButton = screen.getByRole('button', { name: '테스트 질문 답변 보기' });
+      fireEvent.keyDown(toggleButton, { key: ' ' });
+      expect(onToggle).toHaveBeenCalledWith(1);
     });
   });
 
@@ -330,13 +326,13 @@ describe('ChatHistorySection', () => {
       ];
 
       renderChatHistory(items, new Set([1]));
-      const questionButton = screen.getByText('테스트 질문').closest('button');
-      expect(questionButton).toHaveAttribute('aria-expanded', 'true');
+      const toggleButton = screen.getByRole('button', { name: '테스트 질문 답변 숨기기' });
+      expect(toggleButton).toHaveAttribute('aria-expanded', 'true');
 
       cleanup();
       renderChatHistory(items, new Set());
-      const questionButton2 = screen.getByText('테스트 질문').closest('button');
-      expect(questionButton2).toHaveAttribute('aria-expanded', 'false');
+      const toggleButton2 = screen.getByRole('button', { name: '테스트 질문 답변 보기' });
+      expect(toggleButton2).toHaveAttribute('aria-expanded', 'false');
     });
 
     it('aria-controls 속성이 설정된다', () => {
@@ -353,8 +349,8 @@ describe('ChatHistorySection', () => {
       ];
 
       renderChatHistory(items);
-      const questionButton = screen.getByText('테스트 질문').closest('button');
-      expect(questionButton).toHaveAttribute('aria-controls', 'answer-1');
+      const toggleButton = screen.getByRole('button', { name: '테스트 질문 답변 보기' });
+      expect(toggleButton).toHaveAttribute('aria-controls', 'answer-1');
     });
   });
 
@@ -383,8 +379,8 @@ describe('ChatHistorySection', () => {
       ];
 
       renderChatHistory(items, new Set([1]), onToggle);
-      const question2Button = screen.getByText('질문 2').closest('button');
-      fireEvent.click(question2Button!);
+      const question2ToggleButton = screen.getByRole('button', { name: '질문 2 답변 보기' });
+      fireEvent.click(question2ToggleButton);
 
       expect(onToggle).toHaveBeenCalledWith(2);
     });

@@ -61,26 +61,34 @@ export const ChatHistorySection = ({ items, expandedIds, onToggle }: ChatHistory
             aria-labelledby={questionId}
             aria-describedby={isExpanded ? answerId : undefined}
           >
-            <button
-              id={questionId}
-              type="button"
-              css={qaQuestionStyle(theme)}
-              onClick={() => onToggle(item.id)}
-              onKeyDown={e => handleKeyDown(e, item.id)}
-              aria-expanded={isExpanded}
-              aria-controls={answerId}
-              aria-label={`${item.question}. 상태: ${statusLabel}. 답변 ${isExpanded ? '숨기기' : '보기'}`}
-            >
-              {item.isMine && (
-                <span css={badgeStyle(theme)} aria-label="내가 작성한 질문">
-                  나의 질문
+            <div css={qaQuestionStyle}>
+              <div css={questionSummaryStyle}>
+                {item.isMine && (
+                  <span css={badgeStyle(theme)} aria-label="내가 작성한 질문">
+                    나의 질문
+                  </span>
+                )}
+                <p id={questionId} css={questionTextStyle(theme)}>
+                  {item.question}
+                </p>
+              </div>
+              <div css={questionActionStyle}>
+                <span css={statusStyle(theme)} aria-label={`답변 상태: ${statusLabel}`}>
+                  {statusLabel}
                 </span>
-              )}
-              <span css={questionTextStyle(theme)}>{item.question}</span>
-              <span css={statusStyle(theme)} aria-label={`답변 상태: ${statusLabel}`}>
-                {statusLabel}
-              </span>
-            </button>
+                <button
+                  type="button"
+                  css={toggleButtonStyle(theme)}
+                  onClick={() => onToggle(item.id)}
+                  onKeyDown={e => handleKeyDown(e, item.id)}
+                  aria-expanded={isExpanded}
+                  aria-controls={answerId}
+                  aria-label={`${item.question} 답변 ${isExpanded ? '숨기기' : '보기'}`}
+                >
+                  {isExpanded ? '답변 숨기기' : '답변 보기'}
+                </button>
+              </div>
+            </div>
             {isExpanded && (
               <div
                 id={answerId}
@@ -148,26 +156,38 @@ const qaItemStyle = (theme: Theme) => css`
   background: ${theme.colors.surface.strong};
 `;
 
-const qaQuestionStyle = (theme: Theme) => css`
+const qaQuestionStyle = css`
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
-  background: transparent;
-  border: none;
-  color: ${theme.colors.text.default};
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  text-align: left;
-  cursor: pointer;
+`;
+
+const questionSummaryStyle = css`
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 8px;
   flex-wrap: wrap;
 `;
 
+const questionActionStyle = css`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+`;
+
 const questionTextStyle = (theme: Theme) => css`
-  flex: 1;
+  margin: 0;
   color: ${theme.colors.text.default};
+  font-size: ${theme.typography['12Medium'].fontSize};
+  line-height: ${theme.typography['12Medium'].lineHeight};
   overflow-wrap: anywhere;
   word-break: break-word;
+  user-select: text;
 `;
 
 const badgeStyle = (theme: Theme) => css`
@@ -180,9 +200,24 @@ const badgeStyle = (theme: Theme) => css`
 `;
 
 const statusStyle = (theme: Theme) => css`
-  margin-left: auto;
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.weak};
+`;
+
+const toggleButtonStyle = (theme: Theme) => css`
+  height: 28px;
+  border: 1px solid ${theme.colors.border.default};
+  border-radius: 8px;
+  background: ${theme.colors.surface.strong};
+  color: ${theme.colors.text.default};
+  font-size: ${theme.typography['12Medium'].fontSize};
+  padding: 0 10px;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: ${theme.colors.primary.main};
+  }
 `;
 
 const qaAnswerStyle = (theme: Theme) => css`
