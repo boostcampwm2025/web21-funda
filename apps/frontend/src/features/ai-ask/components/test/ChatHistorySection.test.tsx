@@ -330,7 +330,7 @@ describe('ChatHistorySection', () => {
       ];
 
       renderChatHistory(items, new Set([1]));
-      const toggleButton = screen.getByRole('button', { name: '테스트 질문 답변 닫기' });
+      const toggleButton = screen.getByRole('button', { name: '테스트 질문 답변 접기' });
       expect(toggleButton).toHaveAttribute('aria-expanded', 'true');
 
       cleanup();

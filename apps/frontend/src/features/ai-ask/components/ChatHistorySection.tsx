@@ -77,6 +77,7 @@ export const ChatHistorySection = ({ items, expandedIds, onToggle }: ChatHistory
                 <span css={statusStyle(theme)} aria-label={`답변 상태: ${statusLabel}`}>
                   {statusLabel}
                 </span>
+                <span css={actionDividerStyle(theme)} aria-hidden="true" />
                 <button
                   type="button"
                   css={toggleButtonStyle(theme)}
@@ -84,8 +85,9 @@ export const ChatHistorySection = ({ items, expandedIds, onToggle }: ChatHistory
                   onKeyDown={e => handleKeyDown(e, item.id)}
                   aria-expanded={isExpanded}
                   aria-controls={answerId}
-                  aria-label={`${item.question} 답변 ${isExpanded ? '닫기' : '펼치기'}`}
+                  aria-label={`${item.question} 답변 ${isExpanded ? '접기' : '펼치기'}`}
                 >
+                  <span css={toggleTextStyle(theme)}>{isExpanded ? '접기' : '펼치기'}</span>
                   <span css={iconWrapperStyle(isExpanded)} aria-hidden="true">
                     <SVGIcon icon="ArrowLeft" size="xs" />
                   </span>
@@ -174,7 +176,7 @@ const questionSummaryStyle = css`
   display: flex;
   flex: 1;
   min-width: 0;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 `;
@@ -182,7 +184,7 @@ const questionSummaryStyle = css`
 const questionActionStyle = css`
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
 `;
 
@@ -206,18 +208,37 @@ const badgeStyle = (theme: Theme) => css`
 `;
 
 const statusStyle = (theme: Theme) => css`
+  display: inline-flex;
+  align-items: center;
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.weak};
+  padding: 4px 0;
+`;
+
+const actionDividerStyle = (theme: Theme) => css`
+  display: inline-block;
+  width: 1px;
+  height: 18px;
+  align-self: center;
+  background-color: ${theme.colors.border.default};
+  user-select: none;
 `;
 
 const toggleButtonStyle = (theme: Theme) => css`
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   border: none;
   background: none;
   color: ${theme.colors.text.weak};
-  padding: 4px;
+  padding: 4px 0;
   cursor: pointer;
+`;
+
+const toggleTextStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['12Medium'].fontSize};
+  font-weight: ${theme.typography['12Medium'].fontWeight};
+  color: ${theme.colors.text.weak};
 `;
 
 const iconWrapperStyle = (isExpanded: boolean) => css`
