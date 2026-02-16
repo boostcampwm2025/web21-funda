@@ -2,6 +2,7 @@ import { css, keyframes, useTheme } from '@emotion/react';
 import React from 'react';
 
 import { MarkdownRenderer } from '@/comp/MarkdownRenderer';
+import SVGIcon from '@/comp/SVGIcon';
 import type { AiQuestionAnswer } from '@/services/aiAskService';
 import type { Theme } from '@/styles/theme';
 
@@ -83,9 +84,11 @@ export const ChatHistorySection = ({ items, expandedIds, onToggle }: ChatHistory
                   onKeyDown={e => handleKeyDown(e, item.id)}
                   aria-expanded={isExpanded}
                   aria-controls={answerId}
-                  aria-label={`${item.question} 답변 ${isExpanded ? '숨기기' : '보기'}`}
+                  aria-label={`${item.question} 답변 ${isExpanded ? '닫기' : '펼치기'}`}
                 >
-                  {isExpanded ? '답변 숨기기' : '답변 보기'}
+                  <span css={iconWrapperStyle(isExpanded)} aria-hidden="true">
+                    <SVGIcon icon="ArrowLeft" size="xs" />
+                  </span>
                 </button>
               </div>
             </div>
@@ -205,19 +208,19 @@ const statusStyle = (theme: Theme) => css`
 `;
 
 const toggleButtonStyle = (theme: Theme) => css`
-  height: 28px;
-  border: 1px solid ${theme.colors.border.default};
-  border-radius: 8px;
-  background: ${theme.colors.surface.strong};
-  color: ${theme.colors.text.default};
-  font-size: ${theme.typography['12Medium'].fontSize};
-  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  background: none;
+  color: ${theme.colors.text.weak};
+  padding: 4px;
   cursor: pointer;
-  white-space: nowrap;
+`;
 
-  &:hover {
-    border-color: ${theme.colors.primary.main};
-  }
+const iconWrapperStyle = (isExpanded: boolean) => css`
+  display: flex;
+  transition: transform 0.3s ease-in-out;
+  transform: ${isExpanded ? 'rotate(90deg)' : 'rotate(-90deg)'};
 `;
 
 const qaAnswerStyle = (theme: Theme) => css`
