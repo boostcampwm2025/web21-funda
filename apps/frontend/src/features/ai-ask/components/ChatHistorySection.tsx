@@ -108,7 +108,10 @@ export const ChatHistorySection = ({ items, expandedIds, onToggle }: ChatHistory
                     {item.status === 'failed' ? (
                       <p role="alert">AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요.</p>
                     ) : (
-                      <MarkdownRenderer text={item.answer ?? ''} />
+                      <MarkdownRenderer
+                        text={item.answer ?? ''}
+                        customCss={aiAnswerMarkdownStyle}
+                      />
                     )}
                   </div>
                 )}
@@ -230,10 +233,29 @@ const qaAnswerStyle = (theme: Theme) => css`
 `;
 
 const answerTextStyle = (theme: Theme) => css`
-  white-space: pre-wrap;
   font-size: ${theme.typography['12Medium'].fontSize};
   line-height: ${theme.typography['12Medium'].lineHeight};
   color: ${theme.colors.text.default};
+`;
+
+const aiAnswerMarkdownStyle = css`
+  & ul,
+  & ol {
+    margin: 4px 0;
+    padding-left: 20px;
+  }
+
+  & li {
+    margin: 0;
+  }
+
+  & li + li {
+    margin-top: 2px;
+  }
+
+  & li > p {
+    margin: 0;
+  }
 `;
 
 const dotPulse = keyframes`
