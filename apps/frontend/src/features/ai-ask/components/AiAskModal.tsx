@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { CorrectAnswerType, QuizQuestion } from '@/feat/quiz/types';
 import type { AiQuestionAnswer } from '@/services/aiAskService';
 import { getAiQuestions } from '@/services/aiAskService';
-import { BASE_URL, fetchWithAuthRetry } from '@/services/api';
+import { fetchWithAuthRetry } from '@/services/api';
 import { useIsLoggedIn } from '@/store/authStore';
 import { useToast } from '@/store/toastStore';
 
@@ -281,9 +281,9 @@ const streamAiAnswer = async (
     onEvent: (event: SseEvent) => void;
   },
 ) => {
-  // SSE 엔드포인트 URL 구성
-  const url = `${BASE_URL.replace(/\/$/, '')}/quizzes/${quizId}/ai-questions/stream`;
-  const response = await fetchWithAuthRetry(url, {
+  // fetchWithAuthRetry가 BASE_URL을 조합하므로 상대 경로만 전달한다.
+  const endpoint = `/quizzes/${quizId}/ai-questions/stream`;
+  const response = await fetchWithAuthRetry(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
