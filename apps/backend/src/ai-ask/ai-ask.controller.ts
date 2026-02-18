@@ -142,8 +142,10 @@ export class AiAskController {
 
     res.status(200);
     res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
+    // Nginx가 응답을 버퍼링하지 않도록 명시한다.
+    res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
 
     const { initial, streamPromise } = await this.aiAskService.createAiQuestionStream(

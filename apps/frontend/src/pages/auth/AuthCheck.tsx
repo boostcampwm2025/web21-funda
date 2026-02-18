@@ -19,8 +19,17 @@ export const AuthCheck = () => {
   const handleContinue = () => {
     if (from === '/quiz') {
       navigate('/quiz');
+      const nextStepId = uiState.current_quiz_step_id + 1;
+      const nextOrderIndex =
+        typeof uiState.current_step_order_index === 'number'
+          ? uiState.current_step_order_index + 1
+          : undefined;
+
       updateUIState({
-        current_quiz_step_id: uiState.current_quiz_step_id + 1,
+        current_quiz_step_id: nextStepId,
+        ...(nextOrderIndex !== undefined
+          ? { current_step_order_index: nextOrderIndex }
+          : undefined),
       });
     } else {
       navigate('/learn');

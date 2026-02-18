@@ -2,6 +2,7 @@ import { css, keyframes, useTheme } from '@emotion/react';
 import React from 'react';
 
 import { MarkdownRenderer } from '@/comp/MarkdownRenderer';
+import SVGIcon from '@/comp/SVGIcon';
 import type { AiQuestionAnswer } from '@/services/aiAskService';
 import type { Theme } from '@/styles/theme';
 
@@ -61,26 +62,38 @@ export const ChatHistorySection = ({ items, expandedIds, onToggle }: ChatHistory
             aria-labelledby={questionId}
             aria-describedby={isExpanded ? answerId : undefined}
           >
-            <button
-              id={questionId}
-              type="button"
-              css={qaQuestionStyle(theme)}
-              onClick={() => onToggle(item.id)}
-              onKeyDown={e => handleKeyDown(e, item.id)}
-              aria-expanded={isExpanded}
-              aria-controls={answerId}
-              aria-label={`${item.question}. 상태: ${statusLabel}. 답변 ${isExpanded ? '숨기기' : '보기'}`}
-            >
-              {item.isMine && (
-                <span css={badgeStyle(theme)} aria-label="내가 작성한 질문">
-                  나의 질문
+            <div css={qaQuestionStyle}>
+              <div css={questionSummaryStyle}>
+                {item.isMine && (
+                  <span css={badgeStyle(theme)} aria-label="내가 작성한 질문">
+                    나의 질문
+                  </span>
+                )}
+                <p id={questionId} css={questionTextStyle(theme)}>
+                  {item.question}
+                </p>
+              </div>
+              <div css={questionActionStyle}>
+                <span css={statusStyle(theme)} aria-label={`답변 상태: ${statusLabel}`}>
+                  {statusLabel}
                 </span>
-              )}
-              <span css={questionTextStyle(theme)}>{item.question}</span>
-              <span css={statusStyle(theme)} aria-label={`답변 상태: ${statusLabel}`}>
-                {statusLabel}
-              </span>
-            </button>
+                <span css={actionDividerStyle(theme)} aria-hidden="true" />
+                <button
+                  type="button"
+                  css={toggleButtonStyle(theme)}
+                  onClick={() => onToggle(item.id)}
+                  onKeyDown={e => handleKeyDown(e, item.id)}
+                  aria-expanded={isExpanded}
+                  aria-controls={answerId}
+                  aria-label={`${item.question} 답변 ${isExpanded ? '접기' : '펼치기'}`}
+                >
+                  <span css={toggleTextStyle(theme)}>{isExpanded ? '접기' : '펼치기'}</span>
+                  <span css={iconWrapperStyle(isExpanded)} aria-hidden="true">
+                    <SVGIcon icon="ArrowLeft" size="xs" />
+                  </span>
+                </button>
+              </div>
+            </div>
             {isExpanded && (
               <div
                 id={answerId}
@@ -97,7 +110,10 @@ export const ChatHistorySection = ({ items, expandedIds, onToggle }: ChatHistory
                     {item.status === 'failed' ? (
                       <p role="alert">AI 응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요.</p>
                     ) : (
-                      <MarkdownRenderer text={item.answer ?? ''} />
+                      <MarkdownRenderer
+                        text={item.answer ?? ''}
+                        customCss={aiAnswerMarkdownStyle}
+                      />
                     )}
                   </div>
                 )}
@@ -148,26 +164,38 @@ const qaItemStyle = (theme: Theme) => css`
   background: ${theme.colors.surface.strong};
 `;
 
-const qaQuestionStyle = (theme: Theme) => css`
+const qaQuestionStyle = css`
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+`;
+
+const questionSummaryStyle = css`
+  display: flex;
+  flex: 1;
+  min-width: 0;
   align-items: center;
   gap: 8px;
-  width: 100%;
-  background: transparent;
-  border: none;
-  color: ${theme.colors.text.default};
-  font-size: ${theme.typography['12Medium'].fontSize};
-  line-height: ${theme.typography['12Medium'].lineHeight};
-  text-align: left;
-  cursor: pointer;
   flex-wrap: wrap;
 `;
 
+const questionActionStyle = css`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+`;
+
 const questionTextStyle = (theme: Theme) => css`
-  flex: 1;
+  margin: 0;
   color: ${theme.colors.text.default};
+  font-size: ${theme.typography['12Medium'].fontSize};
+  line-height: ${theme.typography['12Medium'].lineHeight};
   overflow-wrap: anywhere;
   word-break: break-word;
+  user-select: text;
 `;
 
 const badgeStyle = (theme: Theme) => css`
@@ -180,9 +208,43 @@ const badgeStyle = (theme: Theme) => css`
 `;
 
 const statusStyle = (theme: Theme) => css`
-  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
   font-size: ${theme.typography['12Medium'].fontSize};
   color: ${theme.colors.text.weak};
+  padding: 4px 0;
+`;
+
+const actionDividerStyle = (theme: Theme) => css`
+  display: inline-block;
+  width: 1px;
+  height: 18px;
+  align-self: center;
+  background-color: ${theme.colors.border.default};
+  user-select: none;
+`;
+
+const toggleButtonStyle = (theme: Theme) => css`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  color: ${theme.colors.text.weak};
+  padding: 4px 0;
+  cursor: pointer;
+`;
+
+const toggleTextStyle = (theme: Theme) => css`
+  font-size: ${theme.typography['12Medium'].fontSize};
+  font-weight: ${theme.typography['12Medium'].fontWeight};
+  color: ${theme.colors.text.weak};
+`;
+
+const iconWrapperStyle = (isExpanded: boolean) => css`
+  display: flex;
+  transition: transform 0.3s ease-in-out;
+  transform: ${isExpanded ? 'rotate(90deg)' : 'rotate(-90deg)'};
 `;
 
 const qaAnswerStyle = (theme: Theme) => css`
@@ -192,10 +254,29 @@ const qaAnswerStyle = (theme: Theme) => css`
 `;
 
 const answerTextStyle = (theme: Theme) => css`
-  white-space: pre-wrap;
   font-size: ${theme.typography['12Medium'].fontSize};
   line-height: ${theme.typography['12Medium'].lineHeight};
   color: ${theme.colors.text.default};
+`;
+
+const aiAnswerMarkdownStyle = css`
+  & ul,
+  & ol {
+    margin: 4px 0;
+    padding-left: 20px;
+  }
+
+  & li {
+    margin: 0;
+  }
+
+  & li + li {
+    margin-top: 2px;
+  }
+
+  & li > p {
+    margin: 0;
+  }
 `;
 
 const dotPulse = keyframes`
