@@ -14,10 +14,16 @@ type RequestRetryOptions = {
 };
 
 /**
- * [인증 갱신] 인증 만료(401) 시 리프레시 토큰 쿠키를 이용하여 세션을 갱신한다.
+ * 동시에 여러 요청이 401을 받았을 때 refresh 요청을 하나로 합치기 위한 상태값
+ */
+let refreshInFlight: Promise<boolean> | null = null;
+
+/**
+ * 리프레시 토큰 요청을 실제로 실행한다.
+ *
  * @returns {Promise<boolean>} 갱신 성공 여부
  */
-async function tryRefreshToken(): Promise<boolean> {
+async function requestRefreshToken(): Promise<boolean> {
   try {
     const response = await fetch(`${BASE_URL}/auth/refresh`, {
       method: 'POST',
@@ -31,6 +37,60 @@ async function tryRefreshToken(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * [인증 갱신] 인증 만료(401) 시 리프레시 토큰 쿠키를 이용하여 세션을 갱신한다.
+ * 동시 요청이 있을 경우 하나의 refresh 요청 결과를 공유한다.
+ *
+ * @returns {Promise<boolean>} 갱신 성공 여부
+ */
+async function tryRefreshToken(): Promise<boolean> {
+  if (refreshInFlight) {
+    return refreshInFlight;
+  }
+
+  refreshInFlight = requestRefreshToken().finally(() => {
+    refreshInFlight = null;
+  });
+
+  return refreshInFlight;
+}
+
+/**
+ * [공통] Response 원본이 필요한 요청용 인증 재시도 함수.
+ * (예: SSE 스트리밍처럼 JSON 파싱 전에 Response 본문 스트림을 직접 읽는 경우)
+ *
+ * @param endpoint API 엔드포인트(상대경로) 또는 절대 URL
+ * @param options Fetch 옵션
+ * @param retryOptions 내부 재시도 상태 관리용
+ */
+export async function fetchWithAuthRetry(
+  endpoint: string,
+  options: RequestInit = {},
+  retryOptions: RequestRetryOptions = { hasRetried: false },
+): Promise<Response> {
+  const isAbsoluteUrl = /^https?:\/\//.test(endpoint);
+  const url = isAbsoluteUrl
+    ? endpoint
+    : `${BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
+
+  const response = await fetch(url, {
+    ...options,
+    credentials: options.credentials ?? 'include',
+  });
+
+  const isUnauthorized = response.status === 401;
+  const isRefreshEndpoint = endpoint.includes('/auth/refresh');
+
+  if (isUnauthorized && !retryOptions.hasRetried && !isRefreshEndpoint) {
+    const isRefreshed = await tryRefreshToken();
+    if (isRefreshed) {
+      return fetchWithAuthRetry(endpoint, options, { hasRetried: true });
+    }
+  }
+
+  return response;
 }
 
 /**
@@ -77,25 +137,17 @@ async function baseRequest<T>(
     ...options.headers,
   };
 
-  // 슬래시 중복 방지 처리된 URL 생성
-  const url = `${BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
-
-  const response = await fetch(url, {
-    ...options,
-    method,
-    headers,
-    body: isFormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
-    credentials: 'include',
-  });
-
-  // 401 Unauthorized 발생 시 리프레시 토큰으로 재시도
-  const isUnauthorized = response.status === 401;
-  const isRefreshEndpoint = endpoint.includes('/auth/refresh');
-
-  if (isUnauthorized && !retryOptions.hasRetried && !isRefreshEndpoint) {
-    const isRefreshed = await tryRefreshToken();
-    if (isRefreshed) return baseRequest(method, endpoint, body, options, { hasRetried: true });
-  }
+  const response = await fetchWithAuthRetry(
+    endpoint,
+    {
+      ...options,
+      method,
+      headers,
+      body: isFormData ? (body as FormData) : body ? JSON.stringify(body) : undefined,
+      credentials: 'include',
+    },
+    retryOptions,
+  );
 
   return handleResponse<T>(response);
 }

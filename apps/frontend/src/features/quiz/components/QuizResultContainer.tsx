@@ -27,8 +27,11 @@ export interface QuizResultContainerProps {
   /** path로 이동. auth/check로 보낼 때는 state.from에 원래 목적지 전달 */
   onNavigate: (path: string, state?: { from?: string }) => void;
   removeGuestStepAttempt: (guestStepId: number) => void;
-  updateUIState: (patch: { current_quiz_step_id?: number }) => void;
-  uiState: { current_quiz_step_id: number };
+  updateUIState: (patch: {
+    current_quiz_step_id?: number;
+    current_step_order_index?: number;
+  }) => void;
+  uiState: { current_quiz_step_id: number; current_step_order_index?: number };
 }
 
 export const QuizResultContainer = ({
@@ -99,7 +102,18 @@ export const QuizResultContainer = ({
     }
 
     if (shouldUpdateStep) {
-      updateUIState({ current_quiz_step_id: uiState.current_quiz_step_id + 1 });
+      const nextStepId = uiState.current_quiz_step_id + 1;
+      const nextOrderIndex =
+        typeof uiState.current_step_order_index === 'number'
+          ? uiState.current_step_order_index + 1
+          : undefined;
+
+      updateUIState({
+        current_quiz_step_id: nextStepId,
+        ...(nextOrderIndex !== undefined
+          ? { current_step_order_index: nextOrderIndex }
+          : undefined),
+      });
     }
 
     if (resultData.isFirstSolveToday) {
