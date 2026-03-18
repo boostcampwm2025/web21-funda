@@ -1,22 +1,24 @@
-version: '3.9'
-
 services:
   mysql:
     image: mysql:8.4
     container_name: funda-mysql
     env_file:
-      - ../../.env
+      - ../../apps/backend/.env.production
     environment:
       MYSQL_DATABASE: funda
-      # 수동 배포에서도 루트 .env 값을 기준으로 DB 계정을 맞춘다.
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
       TZ: Asia/Seoul
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        export MYSQL_USER="$DB_USER"
+        export MYSQL_PASSWORD="$DB_PASSWORD"
+        exec /usr/local/bin/docker-entrypoint.sh mysqld
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u${DB_USER}', '-p${DB_PASSWORD}']
+      test: ['CMD-SHELL', 'mysqladmin ping -h localhost -u"$DB_USER" -p"$DB_PASSWORD" --silent']
       interval: 10s
       timeout: 5s
       retries: 5
