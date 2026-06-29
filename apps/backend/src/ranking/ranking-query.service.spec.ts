@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 
 import { RedisService } from '../common/redis/redis.service';
+import { rankingCacheCounter } from '../metrics/experiment-metrics';
 import { User } from '../users/entities/user.entity';
 
 import { RankingGroup } from './entities/ranking-group.entity';
@@ -13,6 +14,12 @@ import { RankingWeek } from './entities/ranking-week.entity';
 import { RankingWeeklyXp } from './entities/ranking-weekly-xp.entity';
 import { RankingQueryService } from './ranking-query.service';
 
+jest.mock('../metrics/experiment-metrics', () => ({
+  rankingCacheCounter: {
+    inc: jest.fn(),
+  },
+}));
+
 describe('RankingQueryService', () => {
   let service: RankingQueryService;
   let weekRepository: Partial<Repository<RankingWeek>>;
@@ -23,8 +30,10 @@ describe('RankingQueryService', () => {
   let tierRuleRepository: Partial<Repository<RankingTierRule>>;
   let userRepository: Partial<Repository<User>>;
   let redisService: Partial<RedisService>;
+  const incrementCacheCounter = rankingCacheCounter.inc as jest.Mock;
 
   beforeEach(() => {
+    incrementCacheCounter.mockClear();
     weekRepository = { findOne: jest.fn() };
     groupRepository = { findOne: jest.fn() };
     memberRepository = { findOne: jest.fn(), find: jest.fn(), createQueryBuilder: jest.fn() };
@@ -99,9 +108,29 @@ describe('RankingQueryService', () => {
     expect(result.members[0]?.rankZone).toBe('PROMOTION');
     expect(result.myRank).toBe(1);
     expect(result.tier?.id).toBe(3);
+    expect(incrementCacheCounter).toHaveBeenCalledWith({ cache: 'weekly', result: 'miss' });
   });
 
-  it('주간 전체 랭킹을 티어와 XP 기준으로 정렬해 반환한다', async () => {
+  it('주간 랭킹 캐시가 있으면 조회 결과를 반환하고 히트를 기록한다', async () => {
+    const cachedResult = {
+      weekKey: '2025-01',
+      tier: null,
+      groupIndex: null,
+      totalMembers: 0,
+      myRank: null,
+      myWeeklyXp: 0,
+      members: [],
+    };
+    (redisService.get as jest.Mock).mockResolvedValue(cachedResult);
+
+    const result = await service.getWeeklyRanking(1, '2025-01');
+
+    expect(result).toBe(cachedResult);
+    expect(incrementCacheCounter).toHaveBeenCalledWith({ cache: 'weekly', result: 'hit' });
+    expect(weekRepository.findOne).not.toHaveBeenCalled();
+  });
+
+  it('주간 전체 랭킹을 XP 기준으로 정렬해 반환한다', async () => {
     const week = { id: 1, weekKey: '2025-01' } as RankingWeek;
     const goldTier = { id: 3, name: RankingTierName.GOLD, orderIndex: 3 } as RankingTier;
     const silverTier = { id: 2, name: RankingTierName.SILVER, orderIndex: 2 } as RankingTier;
@@ -163,12 +192,30 @@ describe('RankingQueryService', () => {
 
     const result = await service.getOverallWeeklyRanking(3, '2025-01');
 
-    expect(result.members[0]?.displayName).toBe('GoldHigh');
-    expect(result.members[1]?.displayName).toBe('GoldLow');
-    expect(result.members[2]?.displayName).toBe('SilverHigh');
-    expect(result.members[0]?.tierName).toBe(RankingTierName.GOLD);
-    expect(result.members[2]?.tierName).toBe(RankingTierName.SILVER);
-    expect(result.myRank).toBe(1);
+    expect(result.members[0]?.displayName).toBe('SilverHigh');
+    expect(result.members[1]?.displayName).toBe('GoldHigh');
+    expect(result.members[2]?.displayName).toBe('GoldLow');
+    expect(result.members[0]?.tierName).toBe(RankingTierName.SILVER);
+    expect(result.members[2]?.tierName).toBe(RankingTierName.GOLD);
+    expect(result.myRank).toBe(2);
+    expect(incrementCacheCounter).toHaveBeenCalledWith({ cache: 'overall', result: 'miss' });
+  });
+
+  it('주간 전체 랭킹 캐시가 있으면 조회 결과를 반환하고 히트를 기록한다', async () => {
+    const cachedResult = {
+      weekKey: '2025-01',
+      totalMembers: 0,
+      myRank: null,
+      myWeeklyXp: 0,
+      members: [],
+    };
+    (redisService.get as jest.Mock).mockResolvedValue(cachedResult);
+
+    const result = await service.getOverallWeeklyRanking(1, '2025-01');
+
+    expect(result).toBe(cachedResult);
+    expect(incrementCacheCounter).toHaveBeenCalledWith({ cache: 'overall', result: 'hit' });
+    expect(weekRepository.findOne).not.toHaveBeenCalled();
   });
 
   it('관리자 조회에서 티어가 없으면 예외를 발생시킨다', async () => {

@@ -8,6 +8,12 @@ export const CacheKeys = {
   firstUnit: (fieldSlug: string): string => `fields:${fieldSlug}:first_unit`,
   unitOverview: (unitId: number): string => `unit:overview:${unitId}`,
   rankingWeekly: (weekKey: string, userId: number): string => `ranking:weekly:${weekKey}:${userId}`,
+  // 그룹원이 같은 랭킹 데이터를 공유하도록 그룹 ID를 키로 사용한다.
+  rankingWeeklyGroup: (weekKey: string, groupId: number): string =>
+    `ranking:weekly:${weekKey}:group:${groupId}`,
+  // 사용자 소속 그룹을 먼저 찾기 위한 DB 조회를 줄인다.
+  rankingWeeklyMemberRef: (weekKey: string, userId: number): string =>
+    `ranking:weekly:${weekKey}:member:${userId}`,
   rankingOverall: (weekKey: string, userId: number): string =>
     `ranking:overall:${weekKey}:${userId}`,
   profileStats: (type: string, userId: number, timeZone: string): string =>
