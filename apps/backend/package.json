@@ -19,7 +19,8 @@
     "migration:show": "typeorm-ts-node-commonjs -d src/config/typeorm.data-source.ts migration:show",
     "seed": "ts-node src/scripts/seed.ts",
     "seed:checkpoint-pools": "ts-node src/scripts/seed-checkpoint-quiz-pools.ts",
-    "seed:rulesets": "ts-node src/scripts/seed-ranking-rulesets.ts"
+    "seed:rulesets": "ts-node src/scripts/seed-ranking-rulesets.ts",
+    "exp:seed": "ts-node src/scripts/experiment-seed-ranking.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",

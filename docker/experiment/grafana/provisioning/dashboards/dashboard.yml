@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: 'experiment'
+    orgId: 1
+    folder: 'Experiment'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
