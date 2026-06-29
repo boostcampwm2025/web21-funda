@@ -7,6 +7,10 @@ import {
 } from '@willsoto/nestjs-prometheus';
 import { MetricsInterceptor } from 'src/common/interceptors/metrics.interceptor';
 
+import './experiment-metrics';
+
+import { DbPoolMetricsService } from './db-pool-metrics.service';
+
 @Global()
 @Module({
   imports: [
@@ -18,24 +22,22 @@ import { MetricsInterceptor } from 'src/common/interceptors/metrics.interceptor'
     }),
   ],
   providers: [
-    // HTTP 요청 총량 카운터
     makeCounterProvider({
       name: 'http_requests_total',
       help: 'Total number of HTTP requests labeled by method, path and status.',
       labelNames: ['method', 'path', 'status'],
     }),
-    // HTTP 응답 시간 히스토그램
     makeHistogramProvider({
       name: 'http_request_duration_seconds',
       help: 'Duration of HTTP requests in seconds labeled by method, path and status.',
       labelNames: ['method', 'path', 'status'],
-      buckets: [0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10], // 응답 시간 분포 측정 구간
+      buckets: [0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
     }),
-    // 인터셉터 전역 등록
     {
       provide: APP_INTERCEPTOR,
       useClass: MetricsInterceptor,
     },
+    DbPoolMetricsService,
   ],
 })
 export class MetricsModule {}
