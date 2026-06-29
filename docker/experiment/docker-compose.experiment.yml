@@ -144,14 +144,11 @@ services:
   # ----------------------------------------------------------
   # node-exporter — 호스트 자원 (USE: Utilization/Saturation)
   # ----------------------------------------------------------
+  # macOS Docker Desktop은 rslave 마운트 전파를 막아 rootfs 바인드가 실패한다.
+  # 컨테이너 단위 CPU/메모리는 cAdvisor가 담당하므로, 여기서는 기본 수집만으로 충분히 둔다.
   node-exporter:
     image: prom/node-exporter:v1.8.1
     container_name: funda-exp-node-exporter
-    command:
-      - '--path.rootfs=/host'
-    pid: host
-    volumes:
-      - /:/host:ro,rslave
     ports:
       - '9101:9100'
     networks:

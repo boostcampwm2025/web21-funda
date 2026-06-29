@@ -9,7 +9,8 @@ import { AppDataSource } from '../config/typeorm.data-source';
  * - 규모(N)·그룹 정원(G)·주차 수를 환경변수로 파라미터화해 변인을 한 번에 하나만 바꾼다.
  * - XP를 상위 편중(헤비테일) 분포로 채워 정렬/percentile이 trivial하지 않게 한다.
  * - 동일 시드(EXP_SEED)면 동일 데이터를 재현한다(결정적 PRNG).
- * - 실제 운영 데이터와 격리하기 위해 전용 prefix(weekKey=EXP-*, provider_user_id=exp-*)만 사용한다.
+ * - 실제 운영 데이터와 격리하기 위해 미래 연도 weekKey(2999-NN)와 provider_user_id=exp-* 만 쓴다.
+ *   (랭킹 컨트롤러가 weekKey를 /^\d{4}-\d{2}$/로 검증하므로 EXP- 같은 임의 문자열은 못 쓴다.)
  * - 대량 삽입은 raw SQL 멀티로우 bulk insert로 처리한다.
  *
  * 사용 예:
@@ -34,7 +35,9 @@ interface ExperimentConfig {
   xpScale: number;
 }
 
-const WEEK_KEY_PREFIX = 'EXP-';
+// 미래 연도(2999)를 써서 실데이터(현재 ISO 주차)와 충돌하지 않으면서
+// 컨트롤러의 weekKey 검증(/^\d{4}-\d{2}$/)을 통과시킨다. → 2999-01, 2999-02 …
+const WEEK_KEY_PREFIX = '2999-';
 const USER_KEY_PREFIX = 'exp-';
 
 const toInt = (value: string | undefined, fallback: number): number => {
