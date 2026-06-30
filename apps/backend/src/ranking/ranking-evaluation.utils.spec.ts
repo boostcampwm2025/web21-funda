@@ -70,6 +70,66 @@ describe('buildRankingSnapshots', () => {
     expect(snapshots[0]?.status).toBe(RankingSnapshotStatus.MAINTAINED);
     expect(snapshots[1]?.status).toBe(RankingSnapshotStatus.DEMOTED);
   });
+
+  it('상위 비율에 들어도 최소 XP에 못 미치면 승급하지 않는다', () => {
+    const rule = createRule({
+      promoteRatio: '1',
+      promoteMinXp: 100,
+      demoteRatio: '0',
+      demoteMinXp: 0,
+    });
+    const snapshots = buildRankingSnapshots({
+      members: [
+        { userId: 1, xp: 120, lastSolvedAt: new Date('2025-01-01') },
+        { userId: 2, xp: 80, lastSolvedAt: new Date('2025-01-02') },
+      ],
+      rule,
+    });
+
+    const statusByUser = new Map(snapshots.map(snapshot => [snapshot.userId, snapshot.status]));
+    expect(statusByUser.get(1)).toBe(RankingSnapshotStatus.PROMOTED);
+    expect(statusByUser.get(2)).not.toBe(RankingSnapshotStatus.PROMOTED);
+  });
+
+  it('승급 인원은 올림, 강등 인원은 내림으로 계산한다', () => {
+    const rule = createRule({
+      promoteRatio: '0.5',
+      demoteRatio: '0.5',
+      promoteMinXp: 0,
+      demoteMinXp: 0,
+    });
+    const snapshots = buildRankingSnapshots({
+      members: [
+        { userId: 1, xp: 30, lastSolvedAt: new Date('2025-01-01') },
+        { userId: 2, xp: 20, lastSolvedAt: new Date('2025-01-02') },
+        { userId: 3, xp: 10, lastSolvedAt: new Date('2025-01-03') },
+      ],
+      rule,
+    });
+
+    const promoted = snapshots.filter(s => s.status === RankingSnapshotStatus.PROMOTED);
+    const demoted = snapshots.filter(s => s.status === RankingSnapshotStatus.DEMOTED);
+    // 3명 * 0.5 -> 승급 ceil(1.5)=2, 강등 floor(1.5)=1
+    expect(promoted.length).toBe(2);
+    expect(demoted.length).toBe(1);
+  });
+
+  it('XP가 같으면 풀이 시각이 빠른 순, 같으면 사용자 ID 순으로 정렬한다', () => {
+    const rule = createRule({ promoteRatio: '0', demoteRatio: '0' });
+    const snapshots = buildRankingSnapshots({
+      members: [
+        { userId: 5, xp: 100, lastSolvedAt: new Date('2025-01-02') },
+        { userId: 7, xp: 100, lastSolvedAt: new Date('2025-01-01') },
+        { userId: 3, xp: 100, lastSolvedAt: new Date('2025-01-01') },
+      ],
+      rule,
+    });
+
+    const rankByUser = new Map(snapshots.map(snapshot => [snapshot.userId, snapshot.rank]));
+    expect(rankByUser.get(3)).toBe(1);
+    expect(rankByUser.get(7)).toBe(2);
+    expect(rankByUser.get(5)).toBe(3);
+  });
 });
 
 describe('resolveTierChange', () => {
