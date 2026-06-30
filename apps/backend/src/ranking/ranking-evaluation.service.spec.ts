@@ -171,7 +171,19 @@ describe('RankingEvaluationService', () => {
     expect(snapshotRepository.save).not.toHaveBeenCalled();
   });
 
-  it('정상 평가는 보상을 원자적으로 지급하고 평가 완료로 확정한다', async () => {
+  it('티어 룰이 없으면 평가를 중단하고 확정하지 않는다', async () => {
+    const week = { id: 1, status: RankingWeekStatus.OPEN } as RankingWeek;
+    (weekRepository.findOne as jest.Mock).mockResolvedValue(week);
+    (tierRepository.find as jest.Mock).mockResolvedValue([bronzeTier]);
+    (ruleRepository.find as jest.Mock).mockResolvedValue([]);
+
+    await expect(service.evaluateWeek(1)).rejects.toThrow('티어 룰셋이 없습니다');
+
+    expect(week.status).not.toBe(RankingWeekStatus.EVALUATED);
+    expect(userRepository.increment).not.toHaveBeenCalled();
+  });
+
+  it('보상과 완료 상태를 같은 트랜잭션 콜백에서 처리한다', async () => {
     const week = { id: 1, status: RankingWeekStatus.OPEN } as RankingWeek;
     setupHappyPath(week);
 
@@ -185,7 +197,7 @@ describe('RankingEvaluationService', () => {
     expect(week.evaluatedAt).toBeDefined();
   });
 
-  it('같은 주차를 두 번 평가해도 보상은 한 번만 지급된다 (재실행 멱등성)', async () => {
+  it('평가 완료 상태인 순차 재호출을 차단한다', async () => {
     const week = { id: 1, status: RankingWeekStatus.OPEN } as RankingWeek;
     setupHappyPath(week);
 
