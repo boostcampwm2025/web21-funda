@@ -146,8 +146,8 @@ export class RankingEvaluationService {
     for (const tier of tiers) {
       const rule = ruleByTierId.get(tier.id);
       if (!rule) {
-        this.logger.warn(`티어 룰셋이 없습니다: tierId=${tier.id}`);
-        continue;
+        // 한 티어라도 룰이 없으면 부분 정산이 되므로 전체를 롤백한다.
+        throw new Error(`티어 룰셋이 없습니다: tierId=${tier.id}`);
       }
 
       const groups = await groupRepository.find({
