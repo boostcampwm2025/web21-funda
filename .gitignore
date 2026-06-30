@@ -28,6 +28,7 @@ test-results/
 out/
 build
 dist
+apps/backend/graphify-out/
 *.tsbuildinfo
 .tsbuildinfo
 
