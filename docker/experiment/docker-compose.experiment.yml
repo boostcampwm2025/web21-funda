@@ -1,0 +1,182 @@
+# ============================================================
+# 랭킹 캐시 정합성·운영부하 실험 전용 스택
+#
+# 목적: "올바르게 짠 코드가 부하에서만 창발시키는 O(G^2) 병목"을 통제된 환경에서
+#       재현·측정·근본규명한다. (핸드오프 문서 Section 5 환경 요구 구현)
+#
+# 특징:
+#  - backend 는 NODE_ENV=production 빌드(로깅 off) → 측정 노이즈 제거
+#  - CPU/메모리 cgroup 고정(deploy.resources) → 재현성
+#  - 개발/운영 compose 와 포트·네트워크·볼륨이 전부 분리 → 공존 가능
+#  - Prometheus + Grafana + node-exporter + cAdvisor 로 USE method 관측
+#  - MySQL slow log + performance_schema, Redis slowlog 활성화
+#
+# 실행:
+#   docker compose -f docker/experiment/docker-compose.experiment.yml up -d --build
+# 종료(데이터 유지):
+#   docker compose -f docker/experiment/docker-compose.experiment.yml down
+# 종료(데이터까지 삭제):
+#   docker compose -f docker/experiment/docker-compose.experiment.yml down -v
+# ============================================================
+
+name: funda-experiment
+
+services:
+  # ----------------------------------------------------------
+  # MySQL — 측정 가시성(slow log, performance_schema) + 자원 고정
+  # ----------------------------------------------------------
+  mysql:
+    image: mysql:8.4
+    container_name: funda-exp-mysql
+    environment:
+      MYSQL_DATABASE: funda
+      MYSQL_USER: funda_exp
+      MYSQL_PASSWORD: funda_exp_pw
+      MYSQL_ROOT_PASSWORD: root_exp_pw
+      TZ: Asia/Seoul
+    ports:
+      - '3307:3306' # 호스트에서 시딩/검사용 (개발 mysql 3306 과 분리)
+    volumes:
+      - exp_mysql_data:/var/lib/mysql
+      - ./mysql/my.cnf:/etc/mysql/conf.d/experiment.cnf:ro
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-uroot', '-proot_exp_pw']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2g
+    networks:
+      - exp-net
+
+  # ----------------------------------------------------------
+  # Redis — slowlog 활성화, 영속화 off(노이즈 제거)
+  # ----------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: funda-exp-redis
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - '6380:6379' # 개발 redis 6379 와 분리
+    volumes:
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1g
+    networks:
+      - exp-net
+
+  # ----------------------------------------------------------
+  # Backend — NODE_ENV=production 빌드. 단일 인스턴스(이벤트 루프 1개)로
+  # Node CPU 바운드 vs DB 풀 바운드를 판별한다.
+  # ----------------------------------------------------------
+  backend:
+    build:
+      context: ../..
+      dockerfile: docker/production/Dockerfile.backend
+    image: funda-backend:experiment
+    container_name: funda-exp-backend
+    env_file:
+      - ./.env.experiment
+    ports:
+      - '3100:3000' # 부하 인가 대상 (k6 → http://localhost:3100/api/...)
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0' # 단일 코어 고정 → 이벤트 루프 포화를 명확히 관측
+          memory: 1g
+    networks:
+      - exp-net
+
+  # ----------------------------------------------------------
+  # Prometheus — 메트릭 수집(5s)
+  # ----------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: funda-exp-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+    ports:
+      - '9091:9090'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - exp_prometheus_data:/prometheus
+    networks:
+      - exp-net
+
+  # ----------------------------------------------------------
+  # Grafana — 시각화 (datasource 자동 프로비저닝)
+  # ----------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: funda-exp-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - '3002:3000'
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - exp_grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - exp-net
+
+  # ----------------------------------------------------------
+  # node-exporter — 호스트 자원 (USE: Utilization/Saturation)
+  # ----------------------------------------------------------
+  # macOS Docker Desktop은 rslave 마운트 전파를 막아 rootfs 바인드가 실패한다.
+  # 컨테이너 단위 CPU/메모리는 cAdvisor가 담당하므로, 여기서는 기본 수집만으로 충분히 둔다.
+  node-exporter:
+    image: prom/node-exporter:v1.8.1
+    container_name: funda-exp-node-exporter
+    ports:
+      - '9101:9100'
+    networks:
+      - exp-net
+
+  # ----------------------------------------------------------
+  # cAdvisor — 컨테이너별 CPU/메모리 (backend vs mysql 자원 분리)
+  # ----------------------------------------------------------
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: funda-exp-cadvisor
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - '8081:8080'
+    networks:
+      - exp-net
+
+networks:
+  exp-net:
+    name: funda-exp-net
+    driver: bridge
+
+volumes:
+  exp_mysql_data:
+  exp_prometheus_data:
+  exp_grafana_data:

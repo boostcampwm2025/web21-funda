@@ -1,0 +1,31 @@
+# ============================================================
+# 실험용 Prometheus — 앱 메트릭 + 호스트/컨테이너 자원 수집
+# ============================================================
+global:
+  scrape_interval: 5s # 실험은 짧은 knee 구간을 봐야 하므로 촘촘히 수집
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'funda-experiment'
+    environment: 'experiment'
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # 백엔드 앱 메트릭: p50/95/99(http_request_duration_seconds),
+  # event loop lag(nodejs_eventloop_lag_seconds), GC, 메모리 등 기본 메트릭 포함
+  - job_name: 'backend'
+    metrics_path: '/api/metrics'
+    static_configs:
+      - targets: ['backend:3000']
+
+  # 호스트 자원(CPU/메모리/디스크/네트워크) — USE method 의 Utilization/Saturation
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # cAdvisor: 컨테이너별 CPU/메모리 — backend(Node) vs mysql 자원 분리 관측
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']

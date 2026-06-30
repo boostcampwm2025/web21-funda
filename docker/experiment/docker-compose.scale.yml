@@ -1,0 +1,35 @@
+name: funda-experiment
+
+services:
+  backend2:
+    image: funda-backend:experiment
+    container_name: funda-exp-backend2
+    env_file:
+      - ./.env.experiment
+    ports:
+      - '3102:3000'
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1g
+    networks:
+      - exp-net
+
+  # nginx: backend + backend2 라운드로빈
+  nginx-lb:
+    image: nginx:1.27-alpine
+    container_name: funda-exp-nginx
+    ports:
+      - '3101:80'
+    volumes:
+      - ./nginx/nginx-lb.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend2
+    networks:
+      - exp-net

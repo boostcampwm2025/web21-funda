@@ -21,4 +21,9 @@ export const createTypeOrmOptions = (config: ConfigService): DataSourceOptions =
   entities: entityPaths,
   synchronize: false,
   logging: config.get<string>('NODE_ENV') !== 'production',
+  // 커넥션 풀 크기. 미설정 시 mysql2 기본값(10)과 동일하게 유지해 기존 동작을 보존하되,
+  // 운영부하 실험에서 풀을 변인으로 통제할 수 있도록 DB_POOL_SIZE로 노출한다.
+  extra: {
+    connectionLimit: toInt(config.get<string>('DB_POOL_SIZE'), 10),
+  },
 });

@@ -5,12 +5,14 @@ import { In, Repository } from 'typeorm';
 import { CACHE_TTL_SECONDS, CacheKeys } from '../common/cache/cache-keys';
 import { RedisService } from '../common/redis/redis.service';
 import { getKstNow, getKstWeekInfo } from '../common/utils/kst-date';
+import { rankingCacheCounter } from '../metrics/experiment-metrics';
 import { User } from '../users/entities/user.entity';
 
 import type {
   MyTierResult,
   OverallRankingEntry,
   OverallRankingResult,
+  RankingTierSummary,
   RankingZone,
   WeeklyRankingEntry,
   WeeklyRankingResult,
@@ -24,6 +26,28 @@ import { RankingTierRule } from './entities/ranking-tier-rule.entity';
 import { RankingWeek } from './entities/ranking-week.entity';
 import { RankingWeeklyXp } from './entities/ranking-weekly-xp.entity';
 import { buildRankingSnapshots } from './ranking-evaluation.utils';
+
+/** 사용자별 필드를 제외한 그룹 공통 주간 랭킹. */
+interface CachedWeeklyGroupRanking {
+  weekKey: string;
+  tier: RankingTierSummary | null;
+  groupIndex: number;
+  totalMembers: number;
+  members: WeeklyRankingEntry[];
+}
+
+/** 주간 랭킹 조회에 필요한 사용자 소속 정보. */
+type WeeklyMemberRef =
+  | { kind: 'no-week' }
+  | { kind: 'no-group' }
+  | {
+      kind: 'group';
+      weekId: number;
+      groupId: number;
+      tierId: number | null;
+      groupIndex: number;
+      tier: RankingTierSummary | null;
+    };
 
 @Injectable()
 export class RankingQueryService {
@@ -44,6 +68,22 @@ export class RankingQueryService {
     private readonly userRepository: Repository<User>,
     private readonly redisService: RedisService,
   ) {}
+
+  /**
+   * 기존 캐시 경로를 유지하면서 그룹 캐시를 선택적으로 적용한다.
+   * 환경변수가 없으면 기존 사용자 단위 캐시를 사용한다.
+   */
+  private readonly cacheGranularity: 'user' | 'group' =
+    process.env.RANKING_CACHE_GRANULARITY === 'group' ? 'group' : 'user';
+
+  /**
+   * 같은 그룹의 동시 재계산을 현재 프로세스 안에서 합친다.
+   * 그룹 캐시를 사용할 때만 적용한다.
+   */
+  private readonly singleFlight: boolean = process.env.RANKING_SINGLE_FLIGHT === '1';
+
+  /** 그룹별로 진행 중인 랭킹 계산을 보관한다. */
+  private readonly inflightGroupRankings = new Map<string, Promise<CachedWeeklyGroupRanking>>();
 
   /**
    * 현재 사용자 기준으로 티어 정보를 반환한다.
@@ -84,24 +124,40 @@ export class RankingQueryService {
    */
   async getWeeklyRanking(userId: number, weekKey: string | null): Promise<WeeklyRankingResult> {
     const targetWeekKey = weekKey ?? getKstWeekInfo(getKstNow()).weekKey;
+    if (this.cacheGranularity === 'group') {
+      return this.getWeeklyRankingPerGroup(userId, targetWeekKey);
+    }
+    return this.getWeeklyRankingPerUser(userId, targetWeekKey);
+  }
+
+  /**
+   * 기존 사용자 단위 캐시로 주간 랭킹을 조회한다.
+   *
+   * 그룹 캐시 적용 전 동작과의 호환을 위해 유지한다.
+   *
+   * @param userId 사용자 ID
+   * @param targetWeekKey 조회할 주차 키
+   * @returns 사용자 관점의 주간 랭킹
+   */
+  private async getWeeklyRankingPerUser(
+    userId: number,
+    targetWeekKey: string,
+  ): Promise<WeeklyRankingResult> {
     const cached = await this.getCachedWeeklyRanking(userId, targetWeekKey);
     if (cached) {
+      rankingCacheCounter.inc({ cache: 'weekly', result: 'hit' });
       return cached;
     }
+    rankingCacheCounter.inc({ cache: 'weekly', result: 'miss' });
 
     const week = await this.weekRepository.findOne({ where: { weekKey: targetWeekKey } });
 
     if (!week) {
-      const result: WeeklyRankingResult = {
-        weekKey: targetWeekKey,
-        tier: null,
-        groupIndex: null,
-        totalMembers: 0,
-        myRank: null,
-        myWeeklyXp: 0,
-        members: [],
-      };
-      return this.cacheWeeklyRanking(userId, targetWeekKey, result);
+      return this.cacheWeeklyRanking(
+        userId,
+        targetWeekKey,
+        this.buildEmptyWeeklyResult(targetWeekKey, null),
+      );
     }
 
     const member = await this.memberRepository.findOne({
@@ -111,31 +167,217 @@ export class RankingQueryService {
 
     if (!member || !member.group) {
       const fallbackTier = await this.findDefaultTier();
-      const result: WeeklyRankingResult = {
-        weekKey: targetWeekKey,
-        tier: fallbackTier
-          ? {
-              id: fallbackTier.id,
-              name: fallbackTier.name,
-              orderIndex: fallbackTier.orderIndex,
-            }
-          : null,
-        groupIndex: null,
-        totalMembers: 0,
-        myRank: null,
-        myWeeklyXp: 0,
-        members: [],
-      };
-      return this.cacheWeeklyRanking(userId, targetWeekKey, result);
+      return this.cacheWeeklyRanking(
+        userId,
+        targetWeekKey,
+        this.buildEmptyWeeklyResult(targetWeekKey, this.toTierSummary(fallbackTier)),
+      );
     }
 
+    const result = await this.computeGroupRanking(
+      targetWeekKey,
+      week.id,
+      member.groupId,
+      member.tier?.id ?? null,
+      member.group.groupIndex,
+      this.toTierSummary(member.tier),
+    );
+    return this.cacheWeeklyRanking(
+      userId,
+      targetWeekKey,
+      this.deriveUserWeeklyView(result, userId),
+    );
+  }
+
+  /**
+   * 그룹 공통 랭킹을 캐시하고 요청자별 필드를 덧붙인다.
+   *
+   * 그룹원마다 같은 랭킹을 따로 저장하지 않기 위해 공유 캐시를 사용한다.
+   *
+   * @param userId 사용자 ID
+   * @param targetWeekKey 조회할 주차 키
+   * @returns 사용자 관점의 주간 랭킹
+   */
+  private async getWeeklyRankingPerGroup(
+    userId: number,
+    targetWeekKey: string,
+  ): Promise<WeeklyRankingResult> {
+    const ref = await this.resolveWeeklyMemberRef(userId, targetWeekKey);
+
+    if (ref.kind === 'no-week') {
+      return this.buildEmptyWeeklyResult(targetWeekKey, null);
+    }
+    if (ref.kind === 'no-group') {
+      const fallbackTier = await this.findDefaultTier();
+      return this.buildEmptyWeeklyResult(targetWeekKey, this.toTierSummary(fallbackTier));
+    }
+
+    const cacheKey = CacheKeys.rankingWeeklyGroup(targetWeekKey, ref.groupId);
+
+    if (this.singleFlight) {
+      const group = await this.getOrComputeGroupRanking(
+        cacheKey,
+        targetWeekKey,
+        ref.weekId,
+        ref.groupId,
+        ref.tierId,
+        ref.groupIndex,
+        ref.tier,
+      );
+      return this.deriveUserWeeklyView(group, userId);
+    }
+
+    const cachedGroup = await this.getCachedGroupRanking(cacheKey);
+    if (cachedGroup) {
+      rankingCacheCounter.inc({ cache: 'weekly', result: 'hit' });
+      return this.deriveUserWeeklyView(cachedGroup, userId);
+    }
+    rankingCacheCounter.inc({ cache: 'weekly', result: 'miss' });
+
+    const group = await this.computeGroupRanking(
+      targetWeekKey,
+      ref.weekId,
+      ref.groupId,
+      ref.tierId,
+      ref.groupIndex,
+      ref.tier,
+    );
+    await this.setCachedGroupRanking(cacheKey, group);
+    return this.deriveUserWeeklyView(group, userId);
+  }
+
+  /**
+   * 캐시가 없을 때 같은 그룹에서 진행 중인 계산을 재사용한다.
+   *
+   * @param cacheKey 그룹 랭킹 캐시 키
+   * @param weekKey 조회할 주차 키
+   * @param weekId 주차 ID
+   * @param groupId 그룹 ID
+   * @param tierId 티어 ID
+   * @param groupIndex 그룹 번호
+   * @param tier 티어 정보
+   * @returns 그룹 공통 주간 랭킹
+   */
+  private async getOrComputeGroupRanking(
+    cacheKey: string,
+    weekKey: string,
+    weekId: number,
+    groupId: number,
+    tierId: number | null,
+    groupIndex: number,
+    tier: RankingTierSummary | null,
+  ): Promise<CachedWeeklyGroupRanking> {
+    const cached = await this.getCachedGroupRanking(cacheKey);
+    if (cached) {
+      rankingCacheCounter.inc({ cache: 'weekly', result: 'hit' });
+      return cached;
+    }
+
+    // 조회와 등록 사이에 비동기 작업이 없어 같은 키의 계산이 중복 등록되지 않는다.
+    const inflight = this.inflightGroupRankings.get(cacheKey);
+    if (inflight) {
+      rankingCacheCounter.inc({ cache: 'weekly_sf', result: 'follower' });
+      return inflight;
+    }
+
+    rankingCacheCounter.inc({ cache: 'weekly', result: 'miss' });
+    rankingCacheCounter.inc({ cache: 'weekly_sf', result: 'leader' });
+
+    const promise = this.computeGroupRanking(weekKey, weekId, groupId, tierId, groupIndex, tier)
+      .then(async group => {
+        await this.setCachedGroupRanking(cacheKey, group);
+        this.inflightGroupRankings.delete(cacheKey);
+        return group;
+      })
+      .catch((err: unknown) => {
+        this.inflightGroupRankings.delete(cacheKey);
+        throw err;
+      });
+
+    this.inflightGroupRankings.set(cacheKey, promise);
+    return promise;
+  }
+
+  /**
+   * 사용자 소속 그룹을 캐시에서 찾고 없으면 DB에서 조회한다.
+   *
+   * @param userId 사용자 ID
+   * @param targetWeekKey 조회할 주차 키
+   * @returns 주간 랭킹 조회에 필요한 소속 정보
+   */
+  private async resolveWeeklyMemberRef(
+    userId: number,
+    targetWeekKey: string,
+  ): Promise<WeeklyMemberRef> {
+    const refKey = CacheKeys.rankingWeeklyMemberRef(targetWeekKey, userId);
+    try {
+      const cached = await this.redisService.get(refKey);
+      if (this.isWeeklyMemberRef(cached)) {
+        rankingCacheCounter.inc({ cache: 'weekly_member', result: 'hit' });
+        return cached;
+      }
+    } catch {
+      // Redis 장애가 랭킹 조회를 막지 않도록 DB 조회를 계속한다.
+    }
+    rankingCacheCounter.inc({ cache: 'weekly_member', result: 'miss' });
+
+    let ref: WeeklyMemberRef;
+    const week = await this.weekRepository.findOne({ where: { weekKey: targetWeekKey } });
+    if (!week) {
+      ref = { kind: 'no-week' };
+    } else {
+      const member = await this.memberRepository.findOne({
+        where: { weekId: week.id, userId },
+        relations: { tier: true, group: true },
+      });
+      if (!member || !member.group) {
+        ref = { kind: 'no-group' };
+      } else {
+        ref = {
+          kind: 'group',
+          weekId: week.id,
+          groupId: member.groupId,
+          tierId: member.tier?.id ?? null,
+          groupIndex: member.group.groupIndex,
+          tier: this.toTierSummary(member.tier),
+        };
+      }
+    }
+
+    try {
+      await this.redisService.set(refKey, ref, CACHE_TTL_SECONDS.ranking);
+    } catch {
+      // 소속 정보는 다시 조회할 수 있으므로 저장 실패를 요청 오류로 처리하지 않는다.
+    }
+    return ref;
+  }
+
+  /**
+   * 사용자별 필드를 제외한 그룹 공통 랭킹을 계산한다.
+   *
+   * @param weekKey 조회할 주차 키
+   * @param weekId 주차 ID
+   * @param groupId 그룹 ID
+   * @param tierId 티어 ID
+   * @param groupIndex 그룹 번호
+   * @param tier 티어 정보
+   * @returns 그룹 공통 주간 랭킹
+   */
+  private async computeGroupRanking(
+    weekKey: string,
+    weekId: number,
+    groupId: number,
+    tierId: number | null,
+    groupIndex: number,
+    tier: RankingTierSummary | null,
+  ): Promise<CachedWeeklyGroupRanking> {
     const groupMembers = await this.memberRepository.find({
-      where: { groupId: member.groupId },
+      where: { groupId },
       relations: { user: { profileCharacter: true } },
     });
     const memberIds = groupMembers.map(groupMember => groupMember.userId);
     const weeklyXpList = await this.weeklyXpRepository.find({
-      where: { weekId: week.id, userId: In(memberIds) },
+      where: { weekId, userId: In(memberIds) },
     });
     const weeklyXpMap = new Map(weeklyXpList.map(item => [item.userId, item]));
 
@@ -154,7 +396,7 @@ export class RankingQueryService {
       };
     });
 
-    const rankZoneMap = await this.buildRankZoneMap(member.tier?.id ?? null, rankingSeeds);
+    const rankZoneMap = await this.buildRankZoneMap(tierId, rankingSeeds);
     const sorted = [...rankingSeeds].sort((left, right) => {
       if (left.xp !== right.xp) {
         return right.xp - left.xp;
@@ -173,30 +415,94 @@ export class RankingQueryService {
       profileImageUrl: entry.profileImageUrl,
       xp: entry.xp,
       rank: index + 1,
-      isMe: entry.userId === userId,
+      isMe: false,
       rankZone: rankZoneMap.get(entry.userId) ?? 'MAINTAIN',
     }));
 
-    const myRank = members.find(entry => entry.userId === userId)?.rank ?? null;
-    const myWeeklyXp = weeklyXpMap.get(userId)?.xp ?? 0;
-    const tier = member.tier
-      ? {
-          id: member.tier.id,
-          name: member.tier.name,
-          orderIndex: member.tier.orderIndex,
-        }
-      : null;
+    return { weekKey, tier, groupIndex, totalMembers: members.length, members };
+  }
 
-    const result: WeeklyRankingResult = {
-      weekKey: targetWeekKey,
-      tier,
-      groupIndex: member.group.groupIndex,
-      totalMembers: members.length,
-      myRank,
-      myWeeklyXp,
+  /**
+   * 그룹 공통 랭킹에 요청자별 순위와 경험치를 덧붙인다.
+   *
+   * @param group 그룹 공통 주간 랭킹
+   * @param userId 사용자 ID
+   * @returns 사용자 관점의 주간 랭킹
+   */
+  private deriveUserWeeklyView(
+    group: CachedWeeklyGroupRanking,
+    userId: number,
+  ): WeeklyRankingResult {
+    const members = group.members.map(entry => ({
+      ...entry,
+      isMe: entry.userId === userId,
+    }));
+    const mine = members.find(entry => entry.userId === userId);
+
+    return {
+      weekKey: group.weekKey,
+      tier: group.tier,
+      groupIndex: group.groupIndex,
+      totalMembers: group.totalMembers,
+      myRank: mine?.rank ?? null,
+      myWeeklyXp: mine?.xp ?? 0,
       members,
     };
-    return this.cacheWeeklyRanking(userId, targetWeekKey, result);
+  }
+
+  private buildEmptyWeeklyResult(
+    weekKey: string,
+    tier: RankingTierSummary | null,
+  ): WeeklyRankingResult {
+    return {
+      weekKey,
+      tier,
+      groupIndex: null,
+      totalMembers: 0,
+      myRank: null,
+      myWeeklyXp: 0,
+      members: [],
+    };
+  }
+
+  private toTierSummary(tier: RankingTier | null | undefined): RankingTierSummary | null {
+    return tier ? { id: tier.id, name: tier.name, orderIndex: tier.orderIndex } : null;
+  }
+
+  private async getCachedGroupRanking(cacheKey: string): Promise<CachedWeeklyGroupRanking | null> {
+    try {
+      const cached = await this.redisService.get(cacheKey);
+      return this.isCachedGroupRanking(cached) ? cached : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async setCachedGroupRanking(
+    cacheKey: string,
+    group: CachedWeeklyGroupRanking,
+  ): Promise<void> {
+    try {
+      await this.redisService.set(cacheKey, group, CACHE_TTL_SECONDS.ranking);
+    } catch {
+      // 캐시는 다시 만들 수 있으므로 저장 실패를 요청 오류로 처리하지 않는다.
+    }
+  }
+
+  private isCachedGroupRanking(value: unknown): value is CachedWeeklyGroupRanking {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+    const record = value as { members?: unknown; totalMembers?: unknown };
+    return Array.isArray(record.members) && typeof record.totalMembers === 'number';
+  }
+
+  private isWeeklyMemberRef(value: unknown): value is WeeklyMemberRef {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+    const kind = (value as { kind?: unknown }).kind;
+    return kind === 'no-week' || kind === 'no-group' || kind === 'group';
   }
 
   /**
@@ -214,8 +520,10 @@ export class RankingQueryService {
     const targetWeekKey = weekKey ?? getKstWeekInfo(getKstNow()).weekKey;
     const cached = await this.getCachedOverallWeeklyRanking(userId, targetWeekKey);
     if (cached) {
+      rankingCacheCounter.inc({ cache: 'overall', result: 'hit' });
       return cached;
     }
+    rankingCacheCounter.inc({ cache: 'overall', result: 'miss' });
 
     const week = await this.weekRepository.findOne({ where: { weekKey: targetWeekKey } });
 
