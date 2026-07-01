@@ -59,7 +59,7 @@ export class RankingEvaluationService {
 
     const targetWeeks = await weekRepository.find({
       where: {
-        status: In([RankingWeekStatus.OPEN, RankingWeekStatus.LOCKED]),
+        status: RankingWeekStatus.OPEN,
         endsAt: LessThanOrEqual(now),
       },
       order: { endsAt: 'ASC' },
@@ -81,7 +81,7 @@ export class RankingEvaluationService {
   // 락과 평가 완료 상태 검사로 같은 주차가 중복 처리되지 않게 한 트랜잭션으로 묶는다.
   async evaluateWeek(weekId: number): Promise<void> {
     await this.dataSource.transaction(async manager => {
-      const week = await this.lockAndMarkInProgress(manager, weekId);
+      const week = await this.lockWeekForEvaluation(manager, weekId);
       if (!week) {
         return;
       }
@@ -92,8 +92,8 @@ export class RankingEvaluationService {
     });
   }
 
-  // 주차를 락으로 잠그고 진행 상태로 바꾼다. 없거나 이미 평가됐으면 null을 반환한다.
-  private async lockAndMarkInProgress(
+  // 주차를 락으로 잠근다. 없거나 이미 평가됐으면 null을 반환한다.
+  private async lockWeekForEvaluation(
     manager: EntityManager,
     weekId: number,
   ): Promise<RankingWeek | null> {
@@ -111,8 +111,6 @@ export class RankingEvaluationService {
       return null;
     }
 
-    week.status = RankingWeekStatus.LOCKED;
-    await weekRepository.save(week);
     return week;
   }
 

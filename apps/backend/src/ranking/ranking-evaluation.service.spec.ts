@@ -180,6 +180,7 @@ describe('RankingEvaluationService', () => {
     await expect(service.evaluateWeek(1)).rejects.toThrow('티어 룰셋이 없습니다');
 
     expect(week.status).not.toBe(RankingWeekStatus.EVALUATED);
+    expect(weekRepository.save).not.toHaveBeenCalled();
     expect(userRepository.increment).not.toHaveBeenCalled();
   });
 
@@ -193,6 +194,7 @@ describe('RankingEvaluationService', () => {
     expect(userRepository.increment).toHaveBeenCalledTimes(1);
     expect(userRepository.increment).toHaveBeenCalledWith({ id: 5 }, 'diamondCount', 10);
     // 주차를 평가 완료로 확정한다.
+    expect(weekRepository.save).toHaveBeenCalledTimes(1);
     expect(week.status).toBe(RankingWeekStatus.EVALUATED);
     expect(week.evaluatedAt).toBeDefined();
   });
