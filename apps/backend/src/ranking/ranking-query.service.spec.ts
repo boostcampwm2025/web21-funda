@@ -1,7 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 
-import { RedisService } from '../common/redis/redis.service';
+import type { CacheStore } from '../common/cache/cache-store';
 import { rankingCacheCounter } from '../metrics/experiment-metrics';
 import { User } from '../users/entities/user.entity';
 
@@ -29,7 +29,7 @@ describe('RankingQueryService', () => {
   let tierRepository: Partial<Repository<RankingTier>>;
   let tierRuleRepository: Partial<Repository<RankingTierRule>>;
   let userRepository: Partial<Repository<User>>;
-  let redisService: Partial<RedisService>;
+  let cacheStore: Partial<CacheStore>;
   const incrementCacheCounter = rankingCacheCounter.inc as jest.Mock;
 
   beforeEach(() => {
@@ -41,7 +41,7 @@ describe('RankingQueryService', () => {
     tierRepository = { findOne: jest.fn() };
     tierRuleRepository = { findOne: jest.fn() };
     userRepository = { findOne: jest.fn() };
-    redisService = { get: jest.fn(), set: jest.fn() };
+    cacheStore = { get: jest.fn(), set: jest.fn() };
 
     service = new RankingQueryService(
       weekRepository as Repository<RankingWeek>,
@@ -51,7 +51,7 @@ describe('RankingQueryService', () => {
       tierRepository as Repository<RankingTier>,
       tierRuleRepository as Repository<RankingTierRule>,
       userRepository as Repository<User>,
-      redisService as RedisService,
+      cacheStore as CacheStore,
     );
   });
 
@@ -121,7 +121,7 @@ describe('RankingQueryService', () => {
       myWeeklyXp: 0,
       members: [],
     };
-    (redisService.get as jest.Mock).mockResolvedValue(cachedResult);
+    (cacheStore.get as jest.Mock).mockResolvedValue(cachedResult);
 
     const result = await service.getWeeklyRanking(1, '2025-01');
 
@@ -209,7 +209,7 @@ describe('RankingQueryService', () => {
       myWeeklyXp: 0,
       members: [],
     };
-    (redisService.get as jest.Mock).mockResolvedValue(cachedResult);
+    (cacheStore.get as jest.Mock).mockResolvedValue(cachedResult);
 
     const result = await service.getOverallWeeklyRanking(1, '2025-01');
 

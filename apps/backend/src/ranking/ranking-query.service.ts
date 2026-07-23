@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
 import { CACHE_TTL_SECONDS, CacheKeys } from '../common/cache/cache-keys';
-import { RedisService } from '../common/redis/redis.service';
+import { CACHE_STORE, type CacheStore } from '../common/cache/cache-store';
 import { getKstNow, getKstWeekInfo } from '../common/utils/kst-date';
 import { rankingCacheCounter } from '../metrics/experiment-metrics';
 import { User } from '../users/entities/user.entity';
@@ -66,7 +66,8 @@ export class RankingQueryService {
     private readonly tierRuleRepository: Repository<RankingTierRule>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly redisService: RedisService,
+    @Inject(CACHE_STORE)
+    private readonly cacheStore: CacheStore,
   ) {}
 
   /**
@@ -311,7 +312,7 @@ export class RankingQueryService {
   ): Promise<WeeklyMemberRef> {
     const refKey = CacheKeys.rankingWeeklyMemberRef(targetWeekKey, userId);
     try {
-      const cached = await this.redisService.get(refKey);
+      const cached = await this.cacheStore.get(refKey);
       if (this.isWeeklyMemberRef(cached)) {
         rankingCacheCounter.inc({ cache: 'weekly_member', result: 'hit' });
         return cached;
@@ -345,7 +346,7 @@ export class RankingQueryService {
     }
 
     try {
-      await this.redisService.set(refKey, ref, CACHE_TTL_SECONDS.ranking);
+      await this.cacheStore.set(refKey, ref, CACHE_TTL_SECONDS.ranking);
     } catch {
       // 소속 정보는 다시 조회할 수 있으므로 저장 실패를 요청 오류로 처리하지 않는다.
     }
@@ -471,7 +472,7 @@ export class RankingQueryService {
 
   private async getCachedGroupRanking(cacheKey: string): Promise<CachedWeeklyGroupRanking | null> {
     try {
-      const cached = await this.redisService.get(cacheKey);
+      const cached = await this.cacheStore.get(cacheKey);
       return this.isCachedGroupRanking(cached) ? cached : null;
     } catch {
       return null;
@@ -483,7 +484,7 @@ export class RankingQueryService {
     group: CachedWeeklyGroupRanking,
   ): Promise<void> {
     try {
-      await this.redisService.set(cacheKey, group, CACHE_TTL_SECONDS.ranking);
+      await this.cacheStore.set(cacheKey, group, CACHE_TTL_SECONDS.ranking);
     } catch {
       // 캐시는 다시 만들 수 있으므로 저장 실패를 요청 오류로 처리하지 않는다.
     }
@@ -888,7 +889,7 @@ export class RankingQueryService {
     const cacheKey = CacheKeys.rankingWeekly(weekKey, userId);
 
     try {
-      const cached = await this.redisService.get(cacheKey);
+      const cached = await this.cacheStore.get(cacheKey);
       if (!this.isWeeklyRankingResult(cached)) {
         return null;
       }
@@ -906,7 +907,7 @@ export class RankingQueryService {
     const cacheKey = CacheKeys.rankingWeekly(weekKey, userId);
 
     try {
-      await this.redisService.set(cacheKey, result, CACHE_TTL_SECONDS.ranking);
+      await this.cacheStore.set(cacheKey, result, CACHE_TTL_SECONDS.ranking);
     } catch {
       return;
     }
@@ -919,7 +920,7 @@ export class RankingQueryService {
     const cacheKey = CacheKeys.rankingOverall(weekKey, userId);
 
     try {
-      const cached = await this.redisService.get(cacheKey);
+      const cached = await this.cacheStore.get(cacheKey);
       if (!this.isOverallRankingResult(cached)) {
         return null;
       }
@@ -937,7 +938,7 @@ export class RankingQueryService {
     const cacheKey = CacheKeys.rankingOverall(weekKey, userId);
 
     try {
-      await this.redisService.set(cacheKey, result, CACHE_TTL_SECONDS.ranking);
+      await this.cacheStore.set(cacheKey, result, CACHE_TTL_SECONDS.ranking);
     } catch {
       return;
     }

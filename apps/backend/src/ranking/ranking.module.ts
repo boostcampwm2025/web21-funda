@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { CACHE_STORE } from '../common/cache/cache-store';
 import { RedisService } from '../common/redis/redis.service';
 import { User } from '../users/entities/user.entity';
 
@@ -35,7 +36,16 @@ import { RankingQueryService } from './ranking-query.service';
     ]),
   ],
   controllers: [RankingController, AdminRankingController],
-  providers: [RankingService, RankingEvaluationService, RankingQueryService, RedisService],
+  providers: [
+    RankingService,
+    RankingEvaluationService,
+    RankingQueryService,
+    RedisService,
+    {
+      provide: CACHE_STORE,
+      useExisting: RedisService,
+    },
+  ],
   exports: [RankingService],
 })
 export class RankingModule {}
