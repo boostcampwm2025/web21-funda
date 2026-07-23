@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 
+import { CacheLoadCoordinator } from '../common/cache/cache-load-coordinator';
 import type { CacheStore } from '../common/cache/cache-store';
 import { rankingCacheCounter } from '../metrics/experiment-metrics';
 import { User } from '../users/entities/user.entity';
@@ -30,6 +31,7 @@ describe('RankingQueryService', () => {
   let tierRuleRepository: Partial<Repository<RankingTierRule>>;
   let userRepository: Partial<Repository<User>>;
   let cacheStore: Partial<CacheStore>;
+  let cacheLoadCoordinator: Partial<CacheLoadCoordinator>;
   const incrementCacheCounter = rankingCacheCounter.inc as jest.Mock;
 
   beforeEach(() => {
@@ -42,6 +44,7 @@ describe('RankingQueryService', () => {
     tierRuleRepository = { findOne: jest.fn() };
     userRepository = { findOne: jest.fn() };
     cacheStore = { get: jest.fn(), set: jest.fn() };
+    cacheLoadCoordinator = { getOrLoad: jest.fn() };
 
     service = new RankingQueryService(
       weekRepository as Repository<RankingWeek>,
@@ -52,6 +55,7 @@ describe('RankingQueryService', () => {
       tierRuleRepository as Repository<RankingTierRule>,
       userRepository as Repository<User>,
       cacheStore as CacheStore,
+      cacheLoadCoordinator as CacheLoadCoordinator,
     );
   });
 
