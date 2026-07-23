@@ -1,6 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { CacheLoadCoordinator } from '../common/cache/cache-load-coordinator';
+import { CACHE_STORE } from '../common/cache/cache-store';
+import { DISTRIBUTED_LOCK } from '../common/cache/distributed-lock';
+import { LayeredCacheStore } from '../common/cache/layered-cache.store';
+import { LocalCacheStore } from '../common/cache/local-cache.store';
+import { RedisDistributedLockService } from '../common/cache/redis-distributed-lock.service';
 import { RedisService } from '../common/redis/redis.service';
 import { User } from '../users/entities/user.entity';
 
@@ -35,7 +41,24 @@ import { RankingQueryService } from './ranking-query.service';
     ]),
   ],
   controllers: [RankingController, AdminRankingController],
-  providers: [RankingService, RankingEvaluationService, RankingQueryService, RedisService],
+  providers: [
+    RankingService,
+    RankingEvaluationService,
+    RankingQueryService,
+    RedisService,
+    LocalCacheStore,
+    LayeredCacheStore,
+    CacheLoadCoordinator,
+    RedisDistributedLockService,
+    {
+      provide: CACHE_STORE,
+      useExisting: LayeredCacheStore,
+    },
+    {
+      provide: DISTRIBUTED_LOCK,
+      useExisting: RedisDistributedLockService,
+    },
+  ],
   exports: [RankingService],
 })
 export class RankingModule {}

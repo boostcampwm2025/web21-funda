@@ -1,7 +1,8 @@
 import { NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 
-import { RedisService } from '../common/redis/redis.service';
+import { CacheLoadCoordinator } from '../common/cache/cache-load-coordinator';
+import type { CacheStore } from '../common/cache/cache-store';
 import { rankingCacheCounter } from '../metrics/experiment-metrics';
 import { User } from '../users/entities/user.entity';
 
@@ -21,6 +22,7 @@ jest.mock('../metrics/experiment-metrics', () => ({
 }));
 
 describe('RankingQueryService', () => {
+  const originalCacheGranularity = process.env.RANKING_CACHE_GRANULARITY;
   let service: RankingQueryService;
   let weekRepository: Partial<Repository<RankingWeek>>;
   let groupRepository: Partial<Repository<RankingGroup>>;
@@ -29,10 +31,12 @@ describe('RankingQueryService', () => {
   let tierRepository: Partial<Repository<RankingTier>>;
   let tierRuleRepository: Partial<Repository<RankingTierRule>>;
   let userRepository: Partial<Repository<User>>;
-  let redisService: Partial<RedisService>;
+  let cacheStore: Partial<CacheStore>;
+  let cacheLoadCoordinator: Partial<CacheLoadCoordinator>;
   const incrementCacheCounter = rankingCacheCounter.inc as jest.Mock;
 
   beforeEach(() => {
+    process.env.RANKING_CACHE_GRANULARITY = 'user';
     incrementCacheCounter.mockClear();
     weekRepository = { findOne: jest.fn() };
     groupRepository = { findOne: jest.fn() };
@@ -41,9 +45,22 @@ describe('RankingQueryService', () => {
     tierRepository = { findOne: jest.fn() };
     tierRuleRepository = { findOne: jest.fn() };
     userRepository = { findOne: jest.fn() };
-    redisService = { get: jest.fn(), set: jest.fn() };
+    cacheStore = { get: jest.fn(), set: jest.fn() };
+    cacheLoadCoordinator = { getOrLoad: jest.fn() };
 
-    service = new RankingQueryService(
+    service = createService();
+  });
+
+  afterAll(() => {
+    if (originalCacheGranularity === undefined) {
+      delete process.env.RANKING_CACHE_GRANULARITY;
+    } else {
+      process.env.RANKING_CACHE_GRANULARITY = originalCacheGranularity;
+    }
+  });
+
+  function createService(): RankingQueryService {
+    return new RankingQueryService(
       weekRepository as Repository<RankingWeek>,
       groupRepository as Repository<RankingGroup>,
       memberRepository as Repository<RankingGroupMember>,
@@ -51,9 +68,10 @@ describe('RankingQueryService', () => {
       tierRepository as Repository<RankingTier>,
       tierRuleRepository as Repository<RankingTierRule>,
       userRepository as Repository<User>,
-      redisService as RedisService,
+      cacheStore as CacheStore,
+      cacheLoadCoordinator as CacheLoadCoordinator,
     );
-  });
+  }
 
   it('내 티어를 반환한다', async () => {
     const tier = { id: 10, name: RankingTierName.SILVER, orderIndex: 2 } as RankingTier;
@@ -121,13 +139,60 @@ describe('RankingQueryService', () => {
       myWeeklyXp: 0,
       members: [],
     };
-    (redisService.get as jest.Mock).mockResolvedValue(cachedResult);
+    (cacheStore.get as jest.Mock).mockResolvedValue(cachedResult);
 
     const result = await service.getWeeklyRanking(1, '2025-01');
 
     expect(result).toBe(cachedResult);
     expect(incrementCacheCounter).toHaveBeenCalledWith({ cache: 'weekly', result: 'hit' });
     expect(weekRepository.findOne).not.toHaveBeenCalled();
+  });
+
+  it('그룹 캐시 경로에서는 계층 캐시와 분산 락 조정기를 사용한다', async () => {
+    process.env.RANKING_CACHE_GRANULARITY = 'group';
+    service = createService();
+    const memberRef = {
+      kind: 'group',
+      weekId: 1,
+      groupId: 7,
+      tierId: 3,
+      groupIndex: 1,
+      tier: { id: 3, name: RankingTierName.GOLD, orderIndex: 3 },
+    };
+    const cachedGroupRanking = {
+      weekKey: '2025-01',
+      tier: memberRef.tier,
+      groupIndex: 1,
+      totalMembers: 1,
+      members: [
+        {
+          userId: 1,
+          displayName: 'A',
+          profileImageUrl: null,
+          xp: 10,
+          rank: 1,
+          isMe: false,
+          rankZone: 'PROMOTION',
+        },
+      ],
+    };
+    (cacheStore.get as jest.Mock).mockResolvedValue(memberRef);
+    (cacheLoadCoordinator.getOrLoad as jest.Mock).mockResolvedValue({
+      value: cachedGroupRanking,
+      source: 'cache',
+    });
+
+    const result = await service.getWeeklyRanking(1, '2025-01');
+
+    expect(cacheLoadCoordinator.getOrLoad).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cacheKey: 'ranking:weekly:2025-01:group:7',
+        ttlSeconds: 60,
+      }),
+    );
+    expect(result.myRank).toBe(1);
+    expect(result.members[0]?.isMe).toBe(true);
+    expect(incrementCacheCounter).toHaveBeenCalledWith({ cache: 'weekly', result: 'hit' });
   });
 
   it('주간 전체 랭킹을 XP 기준으로 정렬해 반환한다', async () => {
@@ -209,7 +274,7 @@ describe('RankingQueryService', () => {
       myWeeklyXp: 0,
       members: [],
     };
-    (redisService.get as jest.Mock).mockResolvedValue(cachedResult);
+    (cacheStore.get as jest.Mock).mockResolvedValue(cachedResult);
 
     const result = await service.getOverallWeeklyRanking(1, '2025-01');
 
