@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { CACHE_STORE } from '../common/cache/cache-store';
+import { LayeredCacheStore } from '../common/cache/layered-cache.store';
+import { LocalCacheStore } from '../common/cache/local-cache.store';
 import { RedisService } from '../common/redis/redis.service';
 import { User } from '../users/entities/user.entity';
 
@@ -41,9 +43,11 @@ import { RankingQueryService } from './ranking-query.service';
     RankingEvaluationService,
     RankingQueryService,
     RedisService,
+    LocalCacheStore,
+    LayeredCacheStore,
     {
       provide: CACHE_STORE,
-      useExisting: RedisService,
+      useExisting: LayeredCacheStore,
     },
   ],
   exports: [RankingService],
